@@ -1,0 +1,19 @@
+name: "release-downloader"
+description: "Download release assets from private or public github repositories"
+author: "Robin Raju"
+inputs:
+  repo-path:
+    description: "The repository path"
+    default: ""
+    required: true
+  target:
+    description: "The path to download file"
+    default: "./"
+    required: true
+  token:
+    description: "Github token to access private repos"
+    default: ""
+    required: false
+runs:
+  using: "node12"
+  main: "dist/index.js"
