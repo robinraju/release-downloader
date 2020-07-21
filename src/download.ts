@@ -9,10 +9,9 @@ export async function download(
   repoPath: string,
   fileDest: string,
   token: string
-): Promise<void> {
+): Promise<string> {
   const latestRelease = await getlatestRelease(repoPath)
-  await downloadFile(latestRelease, fileDest)
-  console.log(latestRelease)
+  return await downloadFile(latestRelease, fileDest)
 }
 
 async function getlatestRelease(repoPath: string): Promise<[string, string]> {

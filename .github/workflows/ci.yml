@@ -19,7 +19,6 @@ jobs:
         npm install
         npm run build && npm run pack
   test: # make sure the action works on a clean machine without building
-    needs: [build]
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
