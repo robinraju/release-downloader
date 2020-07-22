@@ -17,15 +17,10 @@ jobs:
     - uses: actions/checkout@v2
     - run: |
         npm install
-        npm run build && npm run pack
-  test: # make sure the action works on a clean machine without building
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v2
+        npm run all
     - uses: ./
       with: 
         repo-path: "eloots/course-management-tools"
-        target: "./"
-        token: ""
+        out-file-path: "downloads"
     - name: List working directory
-      run: ls -lrth
+      run: ls -lrth downloads

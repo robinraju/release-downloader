@@ -1,6 +1,6 @@
 {
   "name": "release-downloader",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "private": true,
   "description": "Github action to download release assets",
   "main": "lib/main.js",
@@ -12,7 +12,7 @@
     "pack": "ncc build",
     "test": "jest",
     "dev": "npm run build && npm run pack && node dist/index.js",
-    "all": "npm run build && npm run format && npm run lint && npm run pack && npm test"
+    "all": "npm run format && npm run lint && npm run build && npm run pack && npm test"
   },
   "repository": {
     "type": "git",
@@ -28,6 +28,7 @@
   "license": "MIT",
   "dependencies": {
     "@actions/core": "^1.2.0",
+    "@actions/io": "^1.0.2",
     "shelljs": "^0.8.4",
     "typed-rest-client": "^1.7.3"
   },
