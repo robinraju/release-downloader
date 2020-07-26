@@ -20,7 +20,13 @@ jobs:
         npm run all
     - uses: ./
       with: 
-        repo-path: "eloots/course-management-tools"
+        repository: "lihaoyi/Ammonite"
+        latest: false
+        tag: "2.1.1"
+        fileName: "2.13-2.1.1-14-4f2a1b2-bootstrap"
+        tarBall: true
+        zipBall: true
         out-file-path: "downloads"
+        token: ""
     - name: List working directory
       run: ls -lrth downloads

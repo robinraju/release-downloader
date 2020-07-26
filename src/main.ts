@@ -6,7 +6,7 @@ async function run(): Promise<void> {
   try {
     const downloadSettings = inputHelper.getInputs()
 
-    const res = await download(downloadSettings)
+    const res: string[] = await download(downloadSettings)
     core.info(`Done: ${res}`)
   } catch (error) {
     core.setFailed(error.message)

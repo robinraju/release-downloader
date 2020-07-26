@@ -2,16 +2,32 @@ name: "release-downloader"
 description: "Download release assets from private or public github repositories"
 author: "Robin Raju"
 inputs:
-  repo-path:
+  repository:
     description: "The source repository path. Expected format {owner}/{repo}"
     default: ""
     required: true
   latest:
     description: "A flag to choose between latest release and remaining releases"
-    default: "true"
+    default: "false"
     required: false
+  tag:
+    description: "The github tag to download the release from"  
+    default: ""
+    required: false
+  fileName:
+    description: "Name of the file to download"
+    default: ""
+    required: false
+  tarBall:
+    description: "Download tarball from assets"
+    default: "false"
+    required: false
+  zipBall:
+    description: "Download zipball from assets"
+    default: "false"
+    required: false    
   out-file-path:
-    description: "Relative path under $GITHUB_WORKSPACE to place the downloaded file"
+    description: "Relative path under $GITHUB_WORKSPACE to place the downloaded files"
     default: "."
     required: true
   token:

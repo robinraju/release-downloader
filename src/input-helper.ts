@@ -11,16 +11,33 @@ export function getInputs(): IReleaseDownloadSettings {
   }
   githubWorkspacePath = path.resolve(githubWorkspacePath)
 
-  const repositoryPath = core.getInput("repo-path")
-  const split = repositoryPath.split("/")
-  if (split.length !== 2 || !split[0] || !split[1]) {
+  const repositoryPath = core.getInput("repository")
+  const repo = repositoryPath.split("/")
+  if (repo.length !== 2 || !repo[0] || !repo[1]) {
     throw new Error(
       `Invalid repository '${repositoryPath}'. Expected format {owner}/{repo}.`
     )
   }
   downloadSettings.sourceRepoPath = repositoryPath
 
-  downloadSettings.isLatest = core.getInput("latest") === "true"
+  const latestFlag = core.getInput("latest") === "true"
+  const ghTag = core.getInput("tag")
+
+  if (latestFlag && ghTag.length > 0) {
+    throw new Error(
+      `Invalid inputs. latest=${latestFlag} and tag=${ghTag} can't coexist`
+    )
+  }
+
+  downloadSettings.isLatest = latestFlag
+
+  downloadSettings.tag = ghTag
+
+  downloadSettings.fileName = core.getInput("fileName")
+
+  downloadSettings.tarBall = core.getInput("tarBall") === "true"
+
+  downloadSettings.zipBall = core.getInput("zipBall") === "true"
 
   const outFilePath = core.getInput("out-file-path") || "."
   downloadSettings.outFilePath = path.resolve(githubWorkspacePath, outFilePath)

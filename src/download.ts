@@ -4,37 +4,111 @@ import * as core from "@actions/core"
 import * as io from "@actions/io"
 import * as thc from "typed-rest-client/HttpClient"
 import {IReleaseDownloadSettings} from "./download-settings"
+import {GithubRelease, DownloadMetaData} from "./gh-api"
 
 const API_ROOT = "https://api.github.com/repos"
 const httpClient: thc.HttpClient = new thc.HttpClient("gh-api-client")
 
 export async function download(
   _downloadSettings: IReleaseDownloadSettings
-): Promise<string> {
-  const latestRelease = await getlatestRelease(_downloadSettings.sourceRepoPath)
-  return await downloadFile(latestRelease, _downloadSettings.outFilePath)
+): Promise<string[]> {
+  let ghRelease: GithubRelease
+
+  if (_downloadSettings.isLatest) {
+    ghRelease = await getlatestRelease(_downloadSettings.sourceRepoPath)
+  } else {
+    ghRelease = await getReleaseByTag(
+      _downloadSettings.sourceRepoPath,
+      _downloadSettings.tag
+    )
+  }
+
+  const resolvedAssets: DownloadMetaData[] = resolveAssets(
+    ghRelease,
+    _downloadSettings
+  )
+
+  return await downloadReleaseAssets(
+    resolvedAssets,
+    _downloadSettings.outFilePath
+  )
 }
 
 /**
  * Gets the latest release metadata from github api
  * @param repoPath The source repository path. {owner}/{repo}
  */
-async function getlatestRelease(repoPath: string): Promise<[string, string]> {
+async function getlatestRelease(repoPath: string): Promise<GithubRelease> {
+  core.info(`Fetching latest relase for repo ${repoPath}`)
+
   const response = await httpClient.get(
     `${API_ROOT}/${repoPath}/releases/latest`
   )
 
-  core.info(`Fetching latest relase for repo ${repoPath}`)
+  const responseBody = await response.readBody()
+  const _release: GithubRelease = JSON.parse(responseBody.toString())
+
+  return _release
+}
+
+/**
+ * Gets release data of the specified tag
+ * @param repoPath The source repository
+ * @param tag The github tag to fetch release from.
+ */
+async function getReleaseByTag(
+  repoPath: string,
+  tag: string
+): Promise<GithubRelease> {
+  core.info(`Fetching relase ${tag} from repo ${repoPath}`)
+
+  if (tag === "") {
+    throw new Error("Config error: Please input a valid tag")
+  }
+  const response = await httpClient.get(
+    `${API_ROOT}/${repoPath}/releases/tags/${tag}`
+  )
 
   const responseBody = await response.readBody()
-  const _release = JSON.parse(responseBody.toString())
+  const _release: GithubRelease = JSON.parse(responseBody.toString())
 
-  if (_release && _release["assets"].length > 0) {
-    const asset = _release["assets"][0]
-    return [asset["name"], asset["browser_download_url"]]
+  return _release
+}
+
+function resolveAssets(
+  _release: GithubRelease,
+  _settings: IReleaseDownloadSettings
+): DownloadMetaData[] {
+  const downloads: DownloadMetaData[] = []
+
+  if (_release && _release.assets.length > 0) {
+    const asset = _release.assets.find(a => a.name === _settings.fileName)
+    if (asset) {
+      const dData: DownloadMetaData = {
+        fileName: asset["name"],
+        url: asset["browser_download_url"]
+      }
+      downloads.push(dData)
+    }
   }
 
-  return ["", ""]
+  if (_settings.tarBall) {
+    const fName = _settings.sourceRepoPath.split("/")[1]
+    downloads.push({
+      fileName: `${fName}-${_release.name}.tar.gz`,
+      url: _release.tarball_url
+    })
+  }
+
+  if (_settings.zipBall) {
+    const fName = _settings.sourceRepoPath.split("/")[1]
+    downloads.push({
+      fileName: `${fName}-${_release.name}.zip`,
+      url: _release.zipball_url
+    })
+  }
+
+  return downloads
 }
 
 /**
@@ -42,19 +116,34 @@ async function getlatestRelease(repoPath: string): Promise<[string, string]> {
  * @param [fileName, downloadUrl] The filename and url
  * @param out Target directory
  */
-async function downloadFile(
-  [fileName, downloadUrl]: [string, string],
+async function downloadReleaseAssets(
+  dData: DownloadMetaData[],
   out: string
-): Promise<string> {
-  const response = await httpClient.get(downloadUrl)
+): Promise<string[]> {
   const outFileDir = path.resolve(out)
 
   if (!fs.existsSync(outFileDir)) {
     io.mkdirP(outFileDir)
   }
 
-  core.info(`Downloading file: ${fileName} to: ${outFileDir}`)
-  const outFilePath: string = path.resolve(outFileDir, fileName)
+  const downloads: Promise<string>[] = []
+
+  for (const asset of dData) {
+    downloads.push(downloadFile(asset.fileName, asset.url, out))
+  }
+
+  const result = await Promise.all(downloads)
+  return result
+}
+
+async function downloadFile(
+  fileName: string,
+  url: string,
+  outputPath: string
+): Promise<string> {
+  const response = await httpClient.get(url)
+  core.info(`Downloading file: ${fileName} to: ${outputPath}`)
+  const outFilePath: string = path.resolve(outputPath, fileName)
 
   const fileStream: NodeJS.WritableStream = fs.createWriteStream(outFilePath)
 

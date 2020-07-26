@@ -2303,13 +2303,22 @@ function getInputs() {
         throw new Error("$GITHUB_WORKSPACE not defined");
     }
     githubWorkspacePath = path.resolve(githubWorkspacePath);
-    const repositoryPath = core.getInput("repo-path");
-    const split = repositoryPath.split("/");
-    if (split.length !== 2 || !split[0] || !split[1]) {
+    const repositoryPath = core.getInput("repository");
+    const repo = repositoryPath.split("/");
+    if (repo.length !== 2 || !repo[0] || !repo[1]) {
         throw new Error(`Invalid repository '${repositoryPath}'. Expected format {owner}/{repo}.`);
     }
     downloadSettings.sourceRepoPath = repositoryPath;
-    downloadSettings.isLatest = core.getInput("latest") === "true";
+    const latestFlag = core.getInput("latest") === "true";
+    const ghTag = core.getInput("tag");
+    if (latestFlag && ghTag.length > 0) {
+        throw new Error(`Invalid inputs. latest=${latestFlag} and tag=${ghTag} can't coexist`);
+    }
+    downloadSettings.isLatest = latestFlag;
+    downloadSettings.tag = ghTag;
+    downloadSettings.fileName = core.getInput("fileName");
+    downloadSettings.tarBall = core.getInput("tarBall") === "true";
+    downloadSettings.zipBall = core.getInput("zipBall") === "true";
     const outFilePath = core.getInput("out-file-path") || ".";
     downloadSettings.outFilePath = path.resolve(githubWorkspacePath, outFilePath);
     downloadSettings.token = core.getInput("token");
@@ -2371,8 +2380,15 @@ const API_ROOT = "https://api.github.com/repos";
 const httpClient = new thc.HttpClient("gh-api-client");
 function download(_downloadSettings) {
     return __awaiter(this, void 0, void 0, function* () {
-        const latestRelease = yield getlatestRelease(_downloadSettings.sourceRepoPath);
-        return yield downloadFile(latestRelease, _downloadSettings.outFilePath);
+        let ghRelease;
+        if (_downloadSettings.isLatest) {
+            ghRelease = yield getlatestRelease(_downloadSettings.sourceRepoPath);
+        }
+        else {
+            ghRelease = yield getReleaseByTag(_downloadSettings.sourceRepoPath, _downloadSettings.tag);
+        }
+        const resolvedAssets = resolveAssets(ghRelease, _downloadSettings);
+        return yield downloadReleaseAssets(resolvedAssets, _downloadSettings.outFilePath);
     });
 }
 exports.download = download;
@@ -2382,31 +2398,82 @@ exports.download = download;
  */
 function getlatestRelease(repoPath) {
     return __awaiter(this, void 0, void 0, function* () {
-        const response = yield httpClient.get(`${API_ROOT}/${repoPath}/releases/latest`);
         core.info(`Fetching latest relase for repo ${repoPath}`);
+        const response = yield httpClient.get(`${API_ROOT}/${repoPath}/releases/latest`);
         const responseBody = yield response.readBody();
         const _release = JSON.parse(responseBody.toString());
-        if (_release && _release["assets"].length > 0) {
-            const asset = _release["assets"][0];
-            return [asset["name"], asset["browser_download_url"]];
-        }
-        return ["", ""];
+        return _release;
     });
+}
+/**
+ * Gets release data of the specified tag
+ * @param repoPath The source repository
+ * @param tag The github tag to fetch release from.
+ */
+function getReleaseByTag(repoPath, tag) {
+    return __awaiter(this, void 0, void 0, function* () {
+        core.info(`Fetching relase ${tag} from repo ${repoPath}`);
+        if (tag === "") {
+            throw new Error("Config error: Please input a valid tag");
+        }
+        const response = yield httpClient.get(`${API_ROOT}/${repoPath}/releases/tags/${tag}`);
+        const responseBody = yield response.readBody();
+        const _release = JSON.parse(responseBody.toString());
+        return _release;
+    });
+}
+function resolveAssets(_release, _settings) {
+    const downloads = [];
+    if (_release && _release.assets.length > 0) {
+        const asset = _release.assets.find(a => a.name === _settings.fileName);
+        if (asset) {
+            const dData = {
+                fileName: asset["name"],
+                url: asset["browser_download_url"]
+            };
+            downloads.push(dData);
+        }
+    }
+    if (_settings.tarBall) {
+        const fName = _settings.sourceRepoPath.split("/")[1];
+        downloads.push({
+            fileName: `${fName}-${_release.name}.tar.gz`,
+            url: _release.tarball_url
+        });
+    }
+    if (_settings.zipBall) {
+        const fName = _settings.sourceRepoPath.split("/")[1];
+        downloads.push({
+            fileName: `${fName}-${_release.name}.zip`,
+            url: _release.zipball_url
+        });
+    }
+    return downloads;
 }
 /**
  * Downloads the specified file from a given URL
  * @param [fileName, downloadUrl] The filename and url
  * @param out Target directory
  */
-function downloadFile([fileName, downloadUrl], out) {
+function downloadReleaseAssets(dData, out) {
     return __awaiter(this, void 0, void 0, function* () {
-        const response = yield httpClient.get(downloadUrl);
         const outFileDir = path.resolve(out);
         if (!fs.existsSync(outFileDir)) {
             io.mkdirP(outFileDir);
         }
-        core.info(`Downloading file: ${fileName} to: ${outFileDir}`);
-        const outFilePath = path.resolve(outFileDir, fileName);
+        const downloads = [];
+        for (const asset of dData) {
+            downloads.push(downloadFile(asset.fileName, asset.url, out));
+        }
+        const result = yield Promise.all(downloads);
+        return result;
+    });
+}
+function downloadFile(fileName, url, outputPath) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const response = yield httpClient.get(url);
+        core.info(`Downloading file: ${fileName} to: ${outputPath}`);
+        const outFilePath = path.resolve(outputPath, fileName);
         const fileStream = fs.createWriteStream(outFilePath);
         if (response.message.statusCode !== 200) {
             const err = new Error(`Unexpected response: ${response.message.statusCode}`);
