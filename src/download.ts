@@ -5,6 +5,7 @@ import * as io from "@actions/io"
 import * as thc from "typed-rest-client/HttpClient"
 import {IReleaseDownloadSettings} from "./download-settings"
 import {GithubRelease, DownloadMetaData} from "./gh-api"
+import {IHeaders} from "typed-rest-client/Interfaces"
 
 const API_ROOT = "https://api.github.com/repos"
 const httpClient: thc.HttpClient = new thc.HttpClient("gh-api-client")
@@ -15,11 +16,15 @@ export async function download(
   let ghRelease: GithubRelease
 
   if (_downloadSettings.isLatest) {
-    ghRelease = await getlatestRelease(_downloadSettings.sourceRepoPath)
+    ghRelease = await getlatestRelease(
+      _downloadSettings.sourceRepoPath,
+      _downloadSettings.token
+    )
   } else {
     ghRelease = await getReleaseByTag(
       _downloadSettings.sourceRepoPath,
-      _downloadSettings.tag
+      _downloadSettings.tag,
+      _downloadSettings.token
     )
   }
 
@@ -30,7 +35,8 @@ export async function download(
 
   return await downloadReleaseAssets(
     resolvedAssets,
-    _downloadSettings.outFilePath
+    _downloadSettings.outFilePath,
+    _downloadSettings.token
   )
 }
 
@@ -38,12 +44,28 @@ export async function download(
  * Gets the latest release metadata from github api
  * @param repoPath The source repository path. {owner}/{repo}
  */
-async function getlatestRelease(repoPath: string): Promise<GithubRelease> {
+async function getlatestRelease(
+  repoPath: string,
+  token: string
+): Promise<GithubRelease> {
   core.info(`Fetching latest relase for repo ${repoPath}`)
 
+  let headers: IHeaders = {}
+  if (token !== "") {
+    headers = {Authorization: `token ${token}`}
+  }
+
   const response = await httpClient.get(
-    `${API_ROOT}/${repoPath}/releases/latest`
+    `${API_ROOT}/${repoPath}/releases/latest`,
+    headers
   )
+
+  if (response.message.statusCode !== 200) {
+    const err: Error = new Error(
+      `[getlatestRelease] Unexpected response: ${response.message.statusCode}`
+    )
+    throw err
+  }
 
   const responseBody = await response.readBody()
   const _release: GithubRelease = JSON.parse(responseBody.toString())
@@ -58,16 +80,31 @@ async function getlatestRelease(repoPath: string): Promise<GithubRelease> {
  */
 async function getReleaseByTag(
   repoPath: string,
-  tag: string
+  tag: string,
+  token: string
 ): Promise<GithubRelease> {
   core.info(`Fetching relase ${tag} from repo ${repoPath}`)
 
   if (tag === "") {
     throw new Error("Config error: Please input a valid tag")
   }
+
+  let headers: IHeaders = {}
+  if (token !== "") {
+    headers = {Authorization: `token ${token}`}
+  }
+
   const response = await httpClient.get(
-    `${API_ROOT}/${repoPath}/releases/tags/${tag}`
+    `${API_ROOT}/${repoPath}/releases/tags/${tag}`,
+    headers
   )
+
+  if (response.message.statusCode !== 200) {
+    const err: Error = new Error(
+      `[getReleaseByTag] Unexpected response: ${response.message.statusCode}`
+    )
+    throw err
+  }
 
   const responseBody = await response.readBody()
   const _release: GithubRelease = JSON.parse(responseBody.toString())
@@ -86,7 +123,7 @@ function resolveAssets(
     if (asset) {
       const dData: DownloadMetaData = {
         fileName: asset["name"],
-        url: asset["browser_download_url"]
+        url: asset["url"]
       }
       downloads.push(dData)
     }
@@ -112,13 +149,15 @@ function resolveAssets(
 }
 
 /**
- * Downloads the specified file from a given URL
- * @param [fileName, downloadUrl] The filename and url
+ * Downloads the specified assets from a given URL
+ * @param dData The download metadata
  * @param out Target directory
+ * @param token Personal access token to for private repos
  */
 async function downloadReleaseAssets(
   dData: DownloadMetaData[],
-  out: string
+  out: string,
+  token: string
 ): Promise<string[]> {
   const outFileDir = path.resolve(out)
 
@@ -129,7 +168,7 @@ async function downloadReleaseAssets(
   const downloads: Promise<string>[] = []
 
   for (const asset of dData) {
-    downloads.push(downloadFile(asset.fileName, asset.url, out))
+    downloads.push(downloadFile(asset.fileName, asset.url, out, token))
   }
 
   const result = await Promise.all(downloads)
@@ -139,13 +178,19 @@ async function downloadReleaseAssets(
 async function downloadFile(
   fileName: string,
   url: string,
-  outputPath: string
+  outputPath: string,
+  token: string
 ): Promise<string> {
-  const response = await httpClient.get(url)
-  core.info(`Downloading file: ${fileName} to: ${outputPath}`)
-  const outFilePath: string = path.resolve(outputPath, fileName)
+  let headers: IHeaders = {}
+  if (token !== "") {
+    headers = {
+      Authorization: `token ${token}`,
+      Accept: "application/vnd.github.v3.raw"
+    }
+  }
 
-  const fileStream: NodeJS.WritableStream = fs.createWriteStream(outFilePath)
+  core.info(`Downloading file: ${fileName} to: ${outputPath} token=${token}`)
+  const response = await httpClient.get(url, headers)
 
   if (response.message.statusCode !== 200) {
     const err: Error = new Error(
@@ -153,6 +198,8 @@ async function downloadFile(
     )
     throw err
   }
+  const outFilePath: string = path.resolve(outputPath, fileName)
+  const fileStream: NodeJS.WritableStream = fs.createWriteStream(outFilePath)
 
   return new Promise((resolve, reject) => {
     fileStream.on("error", err => reject(err))

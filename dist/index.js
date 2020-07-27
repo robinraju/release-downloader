@@ -2382,13 +2382,13 @@ function download(_downloadSettings) {
     return __awaiter(this, void 0, void 0, function* () {
         let ghRelease;
         if (_downloadSettings.isLatest) {
-            ghRelease = yield getlatestRelease(_downloadSettings.sourceRepoPath);
+            ghRelease = yield getlatestRelease(_downloadSettings.sourceRepoPath, _downloadSettings.token);
         }
         else {
-            ghRelease = yield getReleaseByTag(_downloadSettings.sourceRepoPath, _downloadSettings.tag);
+            ghRelease = yield getReleaseByTag(_downloadSettings.sourceRepoPath, _downloadSettings.tag, _downloadSettings.token);
         }
         const resolvedAssets = resolveAssets(ghRelease, _downloadSettings);
-        return yield downloadReleaseAssets(resolvedAssets, _downloadSettings.outFilePath);
+        return yield downloadReleaseAssets(resolvedAssets, _downloadSettings.outFilePath, _downloadSettings.token);
     });
 }
 exports.download = download;
@@ -2396,10 +2396,18 @@ exports.download = download;
  * Gets the latest release metadata from github api
  * @param repoPath The source repository path. {owner}/{repo}
  */
-function getlatestRelease(repoPath) {
+function getlatestRelease(repoPath, token) {
     return __awaiter(this, void 0, void 0, function* () {
         core.info(`Fetching latest relase for repo ${repoPath}`);
-        const response = yield httpClient.get(`${API_ROOT}/${repoPath}/releases/latest`);
+        let headers = {};
+        if (token !== "") {
+            headers = { Authorization: `token ${token}` };
+        }
+        const response = yield httpClient.get(`${API_ROOT}/${repoPath}/releases/latest`, headers);
+        if (response.message.statusCode !== 200) {
+            const err = new Error(`[getlatestRelease] Unexpected response: ${response.message.statusCode}`);
+            throw err;
+        }
         const responseBody = yield response.readBody();
         const _release = JSON.parse(responseBody.toString());
         return _release;
@@ -2410,13 +2418,21 @@ function getlatestRelease(repoPath) {
  * @param repoPath The source repository
  * @param tag The github tag to fetch release from.
  */
-function getReleaseByTag(repoPath, tag) {
+function getReleaseByTag(repoPath, tag, token) {
     return __awaiter(this, void 0, void 0, function* () {
         core.info(`Fetching relase ${tag} from repo ${repoPath}`);
         if (tag === "") {
             throw new Error("Config error: Please input a valid tag");
         }
-        const response = yield httpClient.get(`${API_ROOT}/${repoPath}/releases/tags/${tag}`);
+        let headers = {};
+        if (token !== "") {
+            headers = { Authorization: `token ${token}` };
+        }
+        const response = yield httpClient.get(`${API_ROOT}/${repoPath}/releases/tags/${tag}`, headers);
+        if (response.message.statusCode !== 200) {
+            const err = new Error(`[getReleaseByTag] Unexpected response: ${response.message.statusCode}`);
+            throw err;
+        }
         const responseBody = yield response.readBody();
         const _release = JSON.parse(responseBody.toString());
         return _release;
@@ -2429,7 +2445,7 @@ function resolveAssets(_release, _settings) {
         if (asset) {
             const dData = {
                 fileName: asset["name"],
-                url: asset["browser_download_url"]
+                url: asset["url"]
             };
             downloads.push(dData);
         }
@@ -2451,11 +2467,12 @@ function resolveAssets(_release, _settings) {
     return downloads;
 }
 /**
- * Downloads the specified file from a given URL
- * @param [fileName, downloadUrl] The filename and url
+ * Downloads the specified assets from a given URL
+ * @param dData The download metadata
  * @param out Target directory
+ * @param token Personal access token to for private repos
  */
-function downloadReleaseAssets(dData, out) {
+function downloadReleaseAssets(dData, out, token) {
     return __awaiter(this, void 0, void 0, function* () {
         const outFileDir = path.resolve(out);
         if (!fs.existsSync(outFileDir)) {
@@ -2463,22 +2480,29 @@ function downloadReleaseAssets(dData, out) {
         }
         const downloads = [];
         for (const asset of dData) {
-            downloads.push(downloadFile(asset.fileName, asset.url, out));
+            downloads.push(downloadFile(asset.fileName, asset.url, out, token));
         }
         const result = yield Promise.all(downloads);
         return result;
     });
 }
-function downloadFile(fileName, url, outputPath) {
+function downloadFile(fileName, url, outputPath, token) {
     return __awaiter(this, void 0, void 0, function* () {
-        const response = yield httpClient.get(url);
-        core.info(`Downloading file: ${fileName} to: ${outputPath}`);
-        const outFilePath = path.resolve(outputPath, fileName);
-        const fileStream = fs.createWriteStream(outFilePath);
+        let headers = {};
+        if (token !== "") {
+            headers = {
+                Authorization: `token ${token}`,
+                Accept: "application/vnd.github.v3.raw"
+            };
+        }
+        core.info(`Downloading file: ${fileName} to: ${outputPath} token=${token}`);
+        const response = yield httpClient.get(url, headers);
         if (response.message.statusCode !== 200) {
             const err = new Error(`Unexpected response: ${response.message.statusCode}`);
             throw err;
         }
+        const outFilePath = path.resolve(outputPath, fileName);
+        const fileStream = fs.createWriteStream(outFilePath);
         return new Promise((resolve, reject) => {
             fileStream.on("error", err => reject(err));
             const outStream = response.message.pipe(fileStream);

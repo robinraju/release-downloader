@@ -1,6 +1,6 @@
 interface GhAsset {
   name: string
-  browser_download_url: string
+  url: string
 }
 
 export interface GithubRelease {

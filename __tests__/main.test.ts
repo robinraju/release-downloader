@@ -9,7 +9,8 @@ test("run download", async () => {
     fileName: "2.13-2.1.1-14-4f2a1b2-bootstrap",
     tarBall: true,
     zipBall: true,
-    outFilePath: "/tmp/release-downloader"
+    outFilePath: "/tmp/release-downloader",
+    token: ""
   }
   await download(downloadSettings)
 }, 10000)

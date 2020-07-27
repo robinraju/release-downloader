@@ -37,5 +37,5 @@ export interface IReleaseDownloadSettings {
   /**
    * Github access token to download from private repos (Optional)
    */
-  token?: string
+  token: string
 }
