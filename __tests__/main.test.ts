@@ -7,9 +7,9 @@ test("run download", async () => {
     isLatest: false,
     tag: "2.1.1",
     fileName: "2.13-2.1.1-14-4f2a1b2-bootstrap",
-    tarBall: true,
-    zipBall: true,
-    outFilePath: "/tmp/release-downloader",
+    tarBall: false,
+    zipBall: false,
+    outFilePath: "./target",
     token: ""
   }
   await download(downloadSettings)

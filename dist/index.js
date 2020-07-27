@@ -2399,9 +2399,9 @@ exports.download = download;
 function getlatestRelease(repoPath, token) {
     return __awaiter(this, void 0, void 0, function* () {
         core.info(`Fetching latest relase for repo ${repoPath}`);
-        let headers = {};
+        const headers = { Accept: "application/vnd.github.v3+json" };
         if (token !== "") {
-            headers = { Authorization: `token ${token}` };
+            headers["Authorization"] = `token ${token}`;
         }
         const response = yield httpClient.get(`${API_ROOT}/${repoPath}/releases/latest`, headers);
         if (response.message.statusCode !== 200) {
@@ -2424,9 +2424,9 @@ function getReleaseByTag(repoPath, tag, token) {
         if (tag === "") {
             throw new Error("Config error: Please input a valid tag");
         }
-        let headers = {};
+        const headers = { Accept: "application/vnd.github.v3+json" };
         if (token !== "") {
-            headers = { Authorization: `token ${token}` };
+            headers["Authorization"] = `token ${token}`;
         }
         const response = yield httpClient.get(`${API_ROOT}/${repoPath}/releases/tags/${tag}`, headers);
         if (response.message.statusCode !== 200) {
@@ -2488,14 +2488,13 @@ function downloadReleaseAssets(dData, out, token) {
 }
 function downloadFile(fileName, url, outputPath, token) {
     return __awaiter(this, void 0, void 0, function* () {
-        let headers = {};
+        const headers = {
+            Accept: "application/octet-stream"
+        };
         if (token !== "") {
-            headers = {
-                Authorization: `token ${token}`,
-                Accept: "application/vnd.github.v3.raw"
-            };
+            headers["Authorization"] = `token ${token}`;
         }
-        core.info(`Downloading file: ${fileName} to: ${outputPath} token=${token}`);
+        core.info(`Downloading file: ${fileName} to: ${outputPath}`);
         const response = yield httpClient.get(url, headers);
         if (response.message.statusCode !== 200) {
             const err = new Error(`Unexpected response: ${response.message.statusCode}`);

@@ -50,9 +50,9 @@ async function getlatestRelease(
 ): Promise<GithubRelease> {
   core.info(`Fetching latest relase for repo ${repoPath}`)
 
-  let headers: IHeaders = {}
+  const headers: IHeaders = {Accept: "application/vnd.github.v3+json"}
   if (token !== "") {
-    headers = {Authorization: `token ${token}`}
+    headers["Authorization"] = `token ${token}`
   }
 
   const response = await httpClient.get(
@@ -89,9 +89,9 @@ async function getReleaseByTag(
     throw new Error("Config error: Please input a valid tag")
   }
 
-  let headers: IHeaders = {}
+  const headers: IHeaders = {Accept: "application/vnd.github.v3+json"}
   if (token !== "") {
-    headers = {Authorization: `token ${token}`}
+    headers["Authorization"] = `token ${token}`
   }
 
   const response = await httpClient.get(
@@ -181,15 +181,14 @@ async function downloadFile(
   outputPath: string,
   token: string
 ): Promise<string> {
-  let headers: IHeaders = {}
+  const headers: IHeaders = {
+    Accept: "application/octet-stream"
+  }
   if (token !== "") {
-    headers = {
-      Authorization: `token ${token}`,
-      Accept: "application/vnd.github.v3.raw"
-    }
+    headers["Authorization"] = `token ${token}`
   }
 
-  core.info(`Downloading file: ${fileName} to: ${outputPath} token=${token}`)
+  core.info(`Downloading file: ${fileName} to: ${outputPath}`)
   const response = await httpClient.get(url, headers)
 
   if (response.message.statusCode !== 200) {
