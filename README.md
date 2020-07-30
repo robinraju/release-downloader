@@ -14,8 +14,8 @@ A Github Action to download assets from github release. It can download specifie
     # Expected format {owner}/{repo}
     repository: ""
     
-    # A flag to choose between latest release and previous releases
-    # The default value is 'true'
+    # A flag to set the download target as latest release
+    # The default value is 'false'
     latest: true
     
     # The github tag. e.g: v1.0.1
@@ -41,4 +41,53 @@ A Github Action to download assets from github release. It can download specifie
     # https://docs.github.com/en/actions/configuring-and-managing-workflows/creating-and-storing-encrypted-secrets
     # eg: token: ${{ secrets.MY_TOKEN }}
     token: ""
+```
+
+## Scenarios
+
+### Download asset from the latest release
+
+```yaml
+
+- uses: robinraju/release-downloader@v1
+  with:
+    repository: "user/repo"
+    latest: true
+    fileName: "foo.zip"
+```
+
+### Download asset from a specific release version.
+
+```yaml
+
+- uses: robinraju/release-downloader@v1
+  with:
+    repository: "user/repo"
+    tag: "v1.0.0"
+    fileName: "foo.zip"
+```
+
+### Download tarball and zipball
+
+```yaml
+
+- uses: robinraju/release-downloader@v1
+  with:
+    repository: "user/repo"
+    latest: true
+    tarBall: true
+    zipBall: true
+```
+> Remove the `latest` flag and specify `tag` if you want to download from a different release.
+
+### Download multiple assets
+
+```yaml
+- uses: robinraju/release-downloader@v1
+  with:
+    repository: "user/repo"
+    latest: true
+    fileName: "foo.zip"
+    tarBall: true
+    zipBall: true
 ```
