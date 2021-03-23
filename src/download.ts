@@ -121,10 +121,10 @@ function resolveAssets(
   if (_release && _release.assets.length > 0) {
     if (_settings.fileName.length === 0) {
       // Download all assets
-      for (let assetElt of _release.assets) {
+      for (const asset of _release.assets) {
         const dData: DownloadMetaData = {
-          fileName: assetElt["name"],
-          url: assetElt["url"]
+          fileName: asset["name"],
+          url: asset["url"]
         }
         downloads.push(dData)
       }
