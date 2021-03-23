@@ -119,7 +119,7 @@ function resolveAssets(
   const downloads: DownloadMetaData[] = []
 
   if (_release && _release.assets.length > 0) {
-    if (_settings.fileName.length == 0) {
+    if (_settings.fileName.length === 0) {
       // Download all assets
       _release.assets.forEach((asset) => {
         const dData: DownloadMetaData = {
