@@ -353,10 +353,72 @@ module.exports = require("tls");
 
 /***/ }),
 
+/***/ 82:
+/***/ (function(__unusedmodule, exports) {
+
+"use strict";
+
+// We use any as a valid input type
+/* eslint-disable @typescript-eslint/no-explicit-any */
+Object.defineProperty(exports, "__esModule", { value: true });
+/**
+ * Sanitizes an input into a string so it can be passed into issueCommand safely
+ * @param input input to sanitize into a string
+ */
+function toCommandValue(input) {
+    if (input === null || input === undefined) {
+        return '';
+    }
+    else if (typeof input === 'string' || input instanceof String) {
+        return input;
+    }
+    return JSON.stringify(input);
+}
+exports.toCommandValue = toCommandValue;
+//# sourceMappingURL=utils.js.map
+
+/***/ }),
+
 /***/ 87:
 /***/ (function(module) {
 
 module.exports = require("os");
+
+/***/ }),
+
+/***/ 102:
+/***/ (function(__unusedmodule, exports, __webpack_require__) {
+
+"use strict";
+
+// For internal use, subject to change.
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (Object.hasOwnProperty.call(mod, k)) result[k] = mod[k];
+    result["default"] = mod;
+    return result;
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+// We use any as a valid input type
+/* eslint-disable @typescript-eslint/no-explicit-any */
+const fs = __importStar(__webpack_require__(747));
+const os = __importStar(__webpack_require__(87));
+const utils_1 = __webpack_require__(82);
+function issueCommand(command, message) {
+    const filePath = process.env[`GITHUB_${command}`];
+    if (!filePath) {
+        throw new Error(`Unable to find environment variable for file command ${command}`);
+    }
+    if (!fs.existsSync(filePath)) {
+        throw new Error(`Missing file at path: ${filePath}`);
+    }
+    fs.appendFileSync(filePath, `${utils_1.toCommandValue(message)}${os.EOL}`, {
+        encoding: 'utf8'
+    });
+}
+exports.issueCommand = issueCommand;
+//# sourceMappingURL=file-command.js.map
 
 /***/ }),
 
@@ -659,7 +721,7 @@ var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (
 var __importStar = (this && this.__importStar) || function (mod) {
     if (mod && mod.__esModule) return mod;
     var result = {};
-    if (mod != null) for (var k in mod) if (k !== "default" && Object.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
     __setModuleDefault(result, mod);
     return result;
 };
@@ -846,7 +908,7 @@ var parseObject = function (chain, val, options, valuesParsed) {
             }
         }
 
-        leaf = obj; // eslint-disable-line no-param-reassign
+        leaf = obj;
     }
 
     return leaf;
@@ -994,6 +1056,7 @@ var __importStar = (this && this.__importStar) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const os = __importStar(__webpack_require__(87));
+const utils_1 = __webpack_require__(82);
 /**
  * Commands
  *
@@ -1047,28 +1110,14 @@ class Command {
         return cmdStr;
     }
 }
-/**
- * Sanitizes an input into a string so it can be passed into issueCommand safely
- * @param input input to sanitize into a string
- */
-function toCommandValue(input) {
-    if (input === null || input === undefined) {
-        return '';
-    }
-    else if (typeof input === 'string' || input instanceof String) {
-        return input;
-    }
-    return JSON.stringify(input);
-}
-exports.toCommandValue = toCommandValue;
 function escapeData(s) {
-    return toCommandValue(s)
+    return utils_1.toCommandValue(s)
         .replace(/%/g, '%25')
         .replace(/\r/g, '%0D')
         .replace(/\n/g, '%0A');
 }
 function escapeProperty(s) {
-    return toCommandValue(s)
+    return utils_1.toCommandValue(s)
         .replace(/%/g, '%25')
         .replace(/\r/g, '%0D')
         .replace(/\n/g, '%0A')
@@ -1102,6 +1151,8 @@ var __importStar = (this && this.__importStar) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const command_1 = __webpack_require__(431);
+const file_command_1 = __webpack_require__(102);
+const utils_1 = __webpack_require__(82);
 const os = __importStar(__webpack_require__(87));
 const path = __importStar(__webpack_require__(622));
 /**
@@ -1128,9 +1179,17 @@ var ExitCode;
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function exportVariable(name, val) {
-    const convertedVal = command_1.toCommandValue(val);
+    const convertedVal = utils_1.toCommandValue(val);
     process.env[name] = convertedVal;
-    command_1.issueCommand('set-env', { name }, convertedVal);
+    const filePath = process.env['GITHUB_ENV'] || '';
+    if (filePath) {
+        const delimiter = '_GitHubActionsFileCommandDelimeter_';
+        const commandValue = `${name}<<${delimiter}${os.EOL}${convertedVal}${os.EOL}${delimiter}`;
+        file_command_1.issueCommand('ENV', commandValue);
+    }
+    else {
+        command_1.issueCommand('set-env', { name }, convertedVal);
+    }
 }
 exports.exportVariable = exportVariable;
 /**
@@ -1146,7 +1205,13 @@ exports.setSecret = setSecret;
  * @param inputPath
  */
 function addPath(inputPath) {
-    command_1.issueCommand('add-path', {}, inputPath);
+    const filePath = process.env['GITHUB_PATH'] || '';
+    if (filePath) {
+        file_command_1.issueCommand('PATH', inputPath);
+    }
+    else {
+        command_1.issueCommand('add-path', {}, inputPath);
+    }
     process.env['PATH'] = `${inputPath}${path.delimiter}${process.env['PATH']}`;
 }
 exports.addPath = addPath;
@@ -1337,10 +1402,12 @@ module.exports = require("net");
 /***/ }),
 
 /***/ 640:
-/***/ (function(module) {
+/***/ (function(module, __unusedexports, __webpack_require__) {
 
 "use strict";
 
+
+var formats = __webpack_require__(755);
 
 var has = Object.prototype.hasOwnProperty;
 var isArray = Array.isArray;
@@ -1462,7 +1529,7 @@ var decode = function (str, decoder, charset) {
     }
 };
 
-var encode = function encode(str, defaultEncoder, charset) {
+var encode = function encode(str, defaultEncoder, charset, kind, format) {
     // This code was originally written by Brian White (mscdex) for the io.js core querystring library.
     // It has been adapted here for stricter adherence to RFC 3986
     if (str.length === 0) {
@@ -1494,6 +1561,7 @@ var encode = function encode(str, defaultEncoder, charset) {
             || (c >= 0x30 && c <= 0x39) // 0-9
             || (c >= 0x41 && c <= 0x5A) // a-z
             || (c >= 0x61 && c <= 0x7A) // A-Z
+            || (format === formats.RFC1738 && (c === 0x28 || c === 0x29)) // ( )
         ) {
             out += string.charAt(i);
             continue;
@@ -1923,6 +1991,28 @@ function decompressGzippedContent(buffer, charset) {
 }
 exports.decompressGzippedContent = decompressGzippedContent;
 /**
+ * Builds a RegExp to test urls against for deciding
+ * wether to bypass proxy from an entry of the
+ * environment variable setting NO_PROXY
+ *
+ * @param {string} bypass
+ * @return {RegExp}
+ */
+function buildProxyBypassRegexFromEnv(bypass) {
+    try {
+        // We need to keep this around for back-compat purposes
+        return new RegExp(bypass, 'i');
+    }
+    catch (err) {
+        if (err instanceof SyntaxError && (bypass || "").startsWith("*")) {
+            let wildcardEscaped = bypass.replace('*', '(.*)');
+            return new RegExp(wildcardEscaped, 'i');
+        }
+        throw err;
+    }
+}
+exports.buildProxyBypassRegexFromEnv = buildProxyBypassRegexFromEnv;
+/**
  * Obtain Response's Content Charset.
  * Through inspecting `content-type` response header.
  * It Returns 'utf-8' if NO charset specified/matched.
@@ -1955,7 +2045,7 @@ module.exports = require("fs");
 /***/ }),
 
 /***/ 755:
-/***/ (function(module, __unusedexports, __webpack_require__) {
+/***/ (function(module) {
 
 "use strict";
 
@@ -1963,27 +2053,24 @@ module.exports = require("fs");
 var replace = String.prototype.replace;
 var percentTwenties = /%20/g;
 
-var util = __webpack_require__(640);
-
 var Format = {
     RFC1738: 'RFC1738',
     RFC3986: 'RFC3986'
 };
 
-module.exports = util.assign(
-    {
-        'default': Format.RFC3986,
-        formatters: {
-            RFC1738: function (value) {
-                return replace.call(value, percentTwenties, '+');
-            },
-            RFC3986: function (value) {
-                return String(value);
-            }
+module.exports = {
+    'default': Format.RFC3986,
+    formatters: {
+        RFC1738: function (value) {
+            return replace.call(value, percentTwenties, '+');
+        },
+        RFC3986: function (value) {
+            return String(value);
         }
     },
-    Format
-);
+    RFC1738: Format.RFC1738,
+    RFC3986: Format.RFC3986
+};
 
 
 /***/ }),
@@ -2066,6 +2153,7 @@ var stringify = function stringify(
     sort,
     allowDots,
     serializeDate,
+    format,
     formatter,
     encodeValuesOnly,
     charset
@@ -2081,12 +2169,12 @@ var stringify = function stringify(
                 return serializeDate(value);
             }
             return value;
-        }).join(',');
+        });
     }
 
     if (obj === null) {
         if (strictNullHandling) {
-            return encoder && !encodeValuesOnly ? encoder(prefix, defaults.encoder, charset, 'key') : prefix;
+            return encoder && !encodeValuesOnly ? encoder(prefix, defaults.encoder, charset, 'key', format) : prefix;
         }
 
         obj = '';
@@ -2094,8 +2182,8 @@ var stringify = function stringify(
 
     if (isNonNullishPrimitive(obj) || utils.isBuffer(obj)) {
         if (encoder) {
-            var keyValue = encodeValuesOnly ? prefix : encoder(prefix, defaults.encoder, charset, 'key');
-            return [formatter(keyValue) + '=' + formatter(encoder(obj, defaults.encoder, charset, 'value'))];
+            var keyValue = encodeValuesOnly ? prefix : encoder(prefix, defaults.encoder, charset, 'key', format);
+            return [formatter(keyValue) + '=' + formatter(encoder(obj, defaults.encoder, charset, 'value', format))];
         }
         return [formatter(prefix) + '=' + formatter(String(obj))];
     }
@@ -2107,7 +2195,10 @@ var stringify = function stringify(
     }
 
     var objKeys;
-    if (isArray(filter)) {
+    if (generateArrayPrefix === 'comma' && isArray(obj)) {
+        // we need to join elements in
+        objKeys = [{ value: obj.length > 0 ? obj.join(',') || null : undefined }];
+    } else if (isArray(filter)) {
         objKeys = filter;
     } else {
         var keys = Object.keys(obj);
@@ -2116,7 +2207,7 @@ var stringify = function stringify(
 
     for (var i = 0; i < objKeys.length; ++i) {
         var key = objKeys[i];
-        var value = obj[key];
+        var value = typeof key === 'object' && key.value !== undefined ? key.value : obj[key];
 
         if (skipNulls && value === null) {
             continue;
@@ -2137,6 +2228,7 @@ var stringify = function stringify(
             sort,
             allowDots,
             serializeDate,
+            format,
             formatter,
             encodeValuesOnly,
             charset
@@ -2184,6 +2276,7 @@ var normalizeStringifyOptions = function normalizeStringifyOptions(opts) {
         encoder: typeof opts.encoder === 'function' ? opts.encoder : defaults.encoder,
         encodeValuesOnly: typeof opts.encodeValuesOnly === 'boolean' ? opts.encodeValuesOnly : defaults.encodeValuesOnly,
         filter: filter,
+        format: format,
         formatter: formatter,
         serializeDate: typeof opts.serializeDate === 'function' ? opts.serializeDate : defaults.serializeDate,
         skipNulls: typeof opts.skipNulls === 'boolean' ? opts.skipNulls : defaults.skipNulls,
@@ -2249,6 +2342,7 @@ module.exports = function (object, opts) {
             options.sort,
             options.allowDots,
             options.serializeDate,
+            options.format,
             options.formatter,
             options.encodeValuesOnly,
             options.charset
@@ -2294,7 +2388,7 @@ var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (
 var __importStar = (this && this.__importStar) || function (mod) {
     if (mod && mod.__esModule) return mod;
     var result = {};
-    if (mod != null) for (var k in mod) if (k !== "default" && Object.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
     __setModuleDefault(result, mod);
     return result;
 };
@@ -2362,7 +2456,7 @@ var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (
 var __importStar = (this && this.__importStar) || function (mod) {
     if (mod && mod.__esModule) return mod;
     var result = {};
-    if (mod != null) for (var k in mod) if (k !== "default" && Object.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
     __setModuleDefault(result, mod);
     return result;
 };
@@ -2447,13 +2541,25 @@ function getReleaseByTag(repoPath, tag, token) {
 function resolveAssets(_release, _settings) {
     const downloads = [];
     if (_release && _release.assets.length > 0) {
-        const asset = _release.assets.find(a => a.name === _settings.fileName);
-        if (asset) {
-            const dData = {
-                fileName: asset["name"],
-                url: asset["url"]
-            };
-            downloads.push(dData);
+        if (_settings.fileName.length === 0) {
+            // Download all assets
+            for (const asset of _release.assets) {
+                const dData = {
+                    fileName: asset["name"],
+                    url: asset["url"]
+                };
+                downloads.push(dData);
+            }
+        }
+        else if (_settings.fileName.length > 0) {
+            const asset = _release.assets.find(a => a.name === _settings.fileName);
+            if (asset) {
+                const dData = {
+                    fileName: asset["name"],
+                    url: asset["url"]
+                };
+                downloads.push(dData);
+            }
         }
     }
     if (_settings.tarBall) {
@@ -2575,6 +2681,7 @@ var HttpCodes;
 })(HttpCodes = exports.HttpCodes || (exports.HttpCodes = {}));
 const HttpRedirectCodes = [HttpCodes.MovedPermanently, HttpCodes.ResourceMoved, HttpCodes.SeeOther, HttpCodes.TemporaryRedirect, HttpCodes.PermanentRedirect];
 const HttpResponseRetryCodes = [HttpCodes.BadGateway, HttpCodes.ServiceUnavailable, HttpCodes.GatewayTimeout];
+const NetworkRetryErrors = ['ECONNRESET', 'ENOTFOUND', 'ESOCKETTIMEDOUT', 'ETIMEDOUT', 'ECONNREFUSED'];
 const RetryableHttpVerbs = ['OPTIONS', 'GET', 'DELETE', 'HEAD'];
 const ExponentialBackoffCeiling = 10;
 const ExponentialBackoffTimeSlice = 5;
@@ -2637,7 +2744,7 @@ class HttpClient {
         if (no_proxy) {
             this._httpProxyBypassHosts = [];
             no_proxy.split(',').forEach(bypass => {
-                this._httpProxyBypassHosts.push(new RegExp(bypass, 'i'));
+                this._httpProxyBypassHosts.push(util.buildProxyBypassRegexFromEnv(bypass));
             });
         }
         this.requestOptions = requestOptions;
@@ -2729,7 +2836,17 @@ class HttpClient {
             let numTries = 0;
             let response;
             while (numTries < maxTries) {
-                response = yield this.requestRaw(info, data);
+                try {
+                    response = yield this.requestRaw(info, data);
+                }
+                catch (err) {
+                    numTries++;
+                    if (err && err.code && NetworkRetryErrors.indexOf(err.code) > -1 && numTries < maxTries) {
+                        yield this._performExponentialBackoff(numTries);
+                        continue;
+                    }
+                    throw err;
+                }
                 // Check if it's an authentication challenge
                 if (response && response.message && response.message.statusCode === HttpCodes.Unauthorized) {
                     let authenticationHandler;
@@ -2868,6 +2985,8 @@ class HttpClient {
         info.options.port = info.parsedUrl.port ? parseInt(info.parsedUrl.port) : defaultPort;
         info.options.path = (info.parsedUrl.pathname || '') + (info.parsedUrl.search || '');
         info.options.method = method;
+        info.options.timeout = (this.requestOptions && this.requestOptions.socketTimeout) || this._socketTimeout;
+        this._socketTimeout = info.options.timeout;
         info.options.headers = this._mergeHeaders(headers);
         if (this.userAgent != null) {
             info.options.headers["user-agent"] = this.userAgent;
