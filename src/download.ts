@@ -121,13 +121,13 @@ function resolveAssets(
   if (_release && _release.assets.length > 0) {
     if (_settings.fileName.length === 0) {
       // Download all assets
-      _release.assets.forEach((asset) => {
+      for (var asset of _release.assets) {
         const dData: DownloadMetaData = {
           fileName: asset["name"],
           url: asset["url"]
         }
         downloads.push(dData)
-      })
+      }
     } else if (_settings.fileName.length > 0) {
       const asset = _release.assets.find(a => a.name === _settings.fileName)
       if (asset) {
