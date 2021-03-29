@@ -32,7 +32,7 @@
     "typed-rest-client": "^1.8.3"
   },
   "devDependencies": {
-    "@types/node": "^14.14.36",
+    "@types/node": "^14.14.37",
     "@types/jest": "^26.0.22",
     "@typescript-eslint/parser": "^3.10.1",
     "@zeit/ncc": "^0.22.3",
