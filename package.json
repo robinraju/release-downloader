@@ -29,7 +29,7 @@
   "dependencies": {
     "@actions/core": "^1.2.6",
     "@actions/io": "^1.1.0",
-    "typed-rest-client": "^1.8.3"
+    "typed-rest-client": "^1.8.4"
   },
   "devDependencies": {
     "@types/node": "^14.14.37",
