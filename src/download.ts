@@ -48,7 +48,7 @@ async function getlatestRelease(
   repoPath: string,
   token: string
 ): Promise<GithubRelease> {
-  core.info(`Fetching latest relase for repo ${repoPath}`)
+  core.info(`Fetching latest release for repo ${repoPath}`)
 
   const headers: IHeaders = {Accept: "application/vnd.github.v3+json"}
   if (token !== "") {
@@ -83,7 +83,7 @@ async function getReleaseByTag(
   tag: string,
   token: string
 ): Promise<GithubRelease> {
-  core.info(`Fetching relase ${tag} from repo ${repoPath}`)
+  core.info(`Fetching release ${tag} from repo ${repoPath}`)
 
   if (tag === "") {
     throw new Error("Config error: Please input a valid tag")

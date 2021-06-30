@@ -3327,7 +3327,7 @@ exports.download = download;
  */
 function getlatestRelease(repoPath, token) {
     return __awaiter(this, void 0, void 0, function* () {
-        core.info(`Fetching latest relase for repo ${repoPath}`);
+        core.info(`Fetching latest release for repo ${repoPath}`);
         const headers = { Accept: "application/vnd.github.v3+json" };
         if (token !== "") {
             headers["Authorization"] = `token ${token}`;
@@ -3349,7 +3349,7 @@ function getlatestRelease(repoPath, token) {
  */
 function getReleaseByTag(repoPath, tag, token) {
     return __awaiter(this, void 0, void 0, function* () {
-        core.info(`Fetching relase ${tag} from repo ${repoPath}`);
+        core.info(`Fetching release ${tag} from repo ${repoPath}`);
         if (tag === "") {
             throw new Error("Config error: Please input a valid tag");
         }
