@@ -119,13 +119,24 @@ function resolveAssets(
   const downloads: DownloadMetaData[] = []
 
   if (_release && _release.assets.length > 0) {
-    const asset = _release.assets.find(a => a.name === _settings.fileName)
-    if (asset) {
-      const dData: DownloadMetaData = {
-        fileName: asset["name"],
-        url: asset["url"]
+    if (_settings.fileName.length === 0) {
+      // Download all assets
+      for (const asset of _release.assets) {
+        const dData: DownloadMetaData = {
+          fileName: asset["name"],
+          url: asset["url"]
+        }
+        downloads.push(dData)
       }
-      downloads.push(dData)
+    } else if (_settings.fileName.length > 0) {
+      const asset = _release.assets.find(a => a.name === _settings.fileName)
+      if (asset) {
+        const dData: DownloadMetaData = {
+          fileName: asset["name"],
+          url: asset["url"]
+        }
+        downloads.push(dData)
+      }
     }
   }
 
