@@ -3,7 +3,7 @@ import * as path from "path"
 import {IReleaseDownloadSettings} from "./download-settings"
 
 export function getInputs(): IReleaseDownloadSettings {
-  const downloadSettings = ({} as unknown) as IReleaseDownloadSettings
+  const downloadSettings = {} as unknown as IReleaseDownloadSettings
 
   let githubWorkspacePath = process.env["GITHUB_WORKSPACE"]
   if (!githubWorkspacePath) {
