@@ -1,5 +1,6 @@
 ## Github Release Downloader
 
+[![Open in Visual Studio Code](https://open.vscode.dev/badges/open-in-vscode.svg)](https://open.vscode.dev/robinraju/release-downloader)
 ![CI](https://github.com/robinraju/release-downloader/workflows/CI/badge.svg)
 
 A Github Action to download assets from github release. It can download specified files from both private and public repositories.
