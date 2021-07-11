@@ -16,29 +16,29 @@ jobs:
     steps:
     
     - name: Checkout Repo
-    - uses: actions/checkout@v2
+      uses: actions/checkout@v2
     
     - name: Cache node_modules
-    - uses: actions/cache@v2.1.6
+      uses: actions/cache@v2.1.6
       with:
         path: ~/.npm
         key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
-        restore-keys: |
-          ${{ runner.os }}-node-
+        restore-keys: ${{ runner.os }}-node-
       
     - run: |
         npm install
         npm run all
     
     - name: Run action
-    - uses: ./
+      uses: ./
       with: 
         repository: "eloots/course-management-tools"
         tag: "1.0.0"
         fileName: "course-management-tools.zip"
         out-file-path: "."
+    
     - run: |
           unzip course-management-tools.zip
           
     - name: List working directory
-    - run: ls -lrth      
+      run: ls -lrth      
