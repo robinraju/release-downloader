@@ -41,5 +41,4 @@ jobs:
           unzip course-management-tools.zip
           
     - name: List working directory
-      run: ls -lrth
-      
+    - run: ls -lrth      
