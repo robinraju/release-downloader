@@ -9,7 +9,7 @@ A Github Action to download assets from github release. It can download specifie
 
 ```yaml
 
-- uses: robinraju/release-downloader@v1
+- uses: robinraju/release-downloader@v1.1
   with: 
     # The source repository path.
     # Expected format {owner}/{repo}
@@ -50,7 +50,7 @@ A Github Action to download assets from github release. It can download specifie
 
 ```yaml
 
-- uses: robinraju/release-downloader@v1
+- uses: robinraju/release-downloader@v1.1
   with:
     repository: "user/repo"
     latest: true
@@ -61,7 +61,7 @@ A Github Action to download assets from github release. It can download specifie
 
 ```yaml
 
-- uses: robinraju/release-downloader@v1
+- uses: robinraju/release-downloader@v1.1
   with:
     repository: "user/repo"
     tag: "v1.0.0"
@@ -72,7 +72,7 @@ A Github Action to download assets from github release. It can download specifie
 
 ```yaml
 
-- uses: robinraju/release-downloader@v1
+- uses: robinraju/release-downloader@v1.1
   with:
     repository: "user/repo"
     latest: true
@@ -84,7 +84,7 @@ A Github Action to download assets from github release. It can download specifie
 ### Download multiple assets
 
 ```yaml
-- uses: robinraju/release-downloader@v1
+- uses: robinraju/release-downloader@v1.1
   with:
     repository: "user/repo"
     latest: true
