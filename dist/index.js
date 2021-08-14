@@ -3461,7 +3461,8 @@ function resolveAssets(_release, _settings) {
             for (const asset of _release.assets) {
                 const dData = {
                     fileName: asset["name"],
-                    url: asset["url"]
+                    url: asset["url"],
+                    isTarBallOrZipBall: false
                 };
                 downloads.push(dData);
             }
@@ -3471,7 +3472,8 @@ function resolveAssets(_release, _settings) {
             if (asset) {
                 const dData = {
                     fileName: asset["name"],
-                    url: asset["url"]
+                    url: asset["url"],
+                    isTarBallOrZipBall: false
                 };
                 downloads.push(dData);
             }
@@ -3481,14 +3483,16 @@ function resolveAssets(_release, _settings) {
         const fName = _settings.sourceRepoPath.split("/")[1];
         downloads.push({
             fileName: `${fName}-${_release.name}.tar.gz`,
-            url: _release.tarball_url
+            url: _release.tarball_url,
+            isTarBallOrZipBall: true
         });
     }
     if (_settings.zipBall) {
         const fName = _settings.sourceRepoPath.split("/")[1];
         downloads.push({
             fileName: `${fName}-${_release.name}.zip`,
-            url: _release.zipball_url
+            url: _release.zipball_url,
+            isTarBallOrZipBall: true
         });
     }
     return downloads;
@@ -3507,27 +3511,30 @@ function downloadReleaseAssets(dData, out, token) {
         }
         const downloads = [];
         for (const asset of dData) {
-            downloads.push(downloadFile(asset.fileName, asset.url, out, token));
+            downloads.push(downloadFile(asset, out, token));
         }
         const result = yield Promise.all(downloads);
         return result;
     });
 }
-function downloadFile(fileName, url, outputPath, token) {
+function downloadFile(asset, outputPath, token) {
     return __awaiter(this, void 0, void 0, function* () {
         const headers = {
-            Accept: "*/*"
+            Accept: "application/octet-stream"
         };
+        if (asset.isTarBallOrZipBall) {
+            headers["Accept"] = "*/*";
+        }
         if (token !== "") {
             headers["Authorization"] = `token ${token}`;
         }
-        core.info(`Downloading file: ${fileName} to: ${outputPath}`);
-        const response = yield httpClient.get(url, headers);
+        core.info(`Downloading file: ${asset.fileName} to: ${outputPath}`);
+        const response = yield httpClient.get(asset.url, headers);
         if (response.message.statusCode !== 200) {
             const err = new Error(`Unexpected response: ${response.message.statusCode}`);
             throw err;
         }
-        const outFilePath = path.resolve(outputPath, fileName);
+        const outFilePath = path.resolve(outputPath, asset.fileName);
         const fileStream = fs.createWriteStream(outFilePath);
         return new Promise((resolve, reject) => {
             fileStream.on("error", err => reject(err));

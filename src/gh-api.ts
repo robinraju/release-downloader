@@ -13,4 +13,5 @@ export interface GithubRelease {
 export interface DownloadMetaData {
   fileName: string
   url: string
+  isTarBallOrZipBall: boolean
 }
