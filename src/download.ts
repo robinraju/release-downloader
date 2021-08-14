@@ -124,7 +124,8 @@ function resolveAssets(
       for (const asset of _release.assets) {
         const dData: DownloadMetaData = {
           fileName: asset["name"],
-          url: asset["url"]
+          url: asset["url"],
+          isTarBallOrZipBall: false
         }
         downloads.push(dData)
       }
@@ -133,7 +134,8 @@ function resolveAssets(
       if (asset) {
         const dData: DownloadMetaData = {
           fileName: asset["name"],
-          url: asset["url"]
+          url: asset["url"],
+          isTarBallOrZipBall: false
         }
         downloads.push(dData)
       }
@@ -144,7 +146,8 @@ function resolveAssets(
     const fName = _settings.sourceRepoPath.split("/")[1]
     downloads.push({
       fileName: `${fName}-${_release.name}.tar.gz`,
-      url: _release.tarball_url
+      url: _release.tarball_url,
+      isTarBallOrZipBall: true
     })
   }
 
@@ -152,7 +155,8 @@ function resolveAssets(
     const fName = _settings.sourceRepoPath.split("/")[1]
     downloads.push({
       fileName: `${fName}-${_release.name}.zip`,
-      url: _release.zipball_url
+      url: _release.zipball_url,
+      isTarBallOrZipBall: true
     })
   }
 
@@ -179,7 +183,7 @@ async function downloadReleaseAssets(
   const downloads: Promise<string>[] = []
 
   for (const asset of dData) {
-    downloads.push(downloadFile(asset.fileName, asset.url, out, token))
+    downloads.push(downloadFile(asset, out, token))
   }
 
   const result = await Promise.all(downloads)
@@ -187,20 +191,24 @@ async function downloadReleaseAssets(
 }
 
 async function downloadFile(
-  fileName: string,
-  url: string,
+  asset: DownloadMetaData,
   outputPath: string,
   token: string
 ): Promise<string> {
   const headers: IHeaders = {
     Accept: "application/octet-stream"
   }
+
+  if (asset.isTarBallOrZipBall) {
+    headers["Accept"] = "*/*"
+  }
+
   if (token !== "") {
     headers["Authorization"] = `token ${token}`
   }
 
-  core.info(`Downloading file: ${fileName} to: ${outputPath}`)
-  const response = await httpClient.get(url, headers)
+  core.info(`Downloading file: ${asset.fileName} to: ${outputPath}`)
+  const response = await httpClient.get(asset.url, headers)
 
   if (response.message.statusCode !== 200) {
     const err: Error = new Error(
@@ -208,7 +216,7 @@ async function downloadFile(
     )
     throw err
   }
-  const outFilePath: string = path.resolve(outputPath, fileName)
+  const outFilePath: string = path.resolve(outputPath, asset.fileName)
   const fileStream: NodeJS.WritableStream = fs.createWriteStream(outFilePath)
 
   return new Promise((resolve, reject) => {
