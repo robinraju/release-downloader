@@ -3516,7 +3516,7 @@ function downloadReleaseAssets(dData, out, token) {
 function downloadFile(fileName, url, outputPath, token) {
     return __awaiter(this, void 0, void 0, function* () {
         const headers = {
-            Accept: "application/octet-stream"
+            Accept: "*/*"
         };
         if (token !== "") {
             headers["Authorization"] = `token ${token}`;

@@ -193,7 +193,7 @@ async function downloadFile(
   token: string
 ): Promise<string> {
   const headers: IHeaders = {
-    Accept: "application/octet-stream"
+    Accept: "*/*"
   }
   if (token !== "") {
     headers["Authorization"] = `token ${token}`
