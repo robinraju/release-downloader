@@ -35,10 +35,21 @@ jobs:
         repository: "eloots/course-management-tools"
         tag: "1.0.0"
         fileName: "course-management-tools.zip"
-        out-file-path: "."
-    
-    - run: |
-          unzip course-management-tools.zip
+        out-file-path: "./cmt"
           
-    - name: List working directory
-      run: ls -lrth      
+    - name: List downloaded files
+      run: ls -lrth cmt
+
+    - name: Test download from a private repo
+      uses: ./
+      with:
+        repository: "robinraju/release-downloader-test"
+        latest: true
+        fileName: "*"
+        tarBall: true
+        zipBall: true
+        token: ${{ secrets.RELEASE_DOWNLOADER_TEST_TOKEN }}
+        out-file-path: "./downloader-test"
+
+    - name: List downloaded files from private repo
+      run: ls -lrth downloader-test
