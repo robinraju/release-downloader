@@ -41,4 +41,17 @@ jobs:
           unzip course-management-tools.zip
           
     - name: List working directory
-      run: ls -lrth      
+      run: ls -lrth
+
+    - name: Test download from a private repo
+      uses: ./
+      with:
+        repository: "robinraju/release-downloader-test"
+        latest: true
+        fileName: "*"
+        tarBall: true
+        zipBall: true
+        token: ${{ secrets.RELEASE_DOWNLOADER_TEST_TOKEN }}
+
+    - name: List working directory
+      run: ls -lrth

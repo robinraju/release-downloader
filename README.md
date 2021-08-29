@@ -25,6 +25,7 @@ A Github Action to download assets from github release. It can download specifie
     
     # The name of the file to download.
     # Use this field only to specify filenames other than tarball or zipball, if any.
+    # Use '*' to download all assets
     fileName: ""
     
     # Download the attached tarball (*.tar.gz)
@@ -91,4 +92,14 @@ A Github Action to download assets from github release. It can download specifie
     fileName: "foo.zip"
     tarBall: true
     zipBall: true
+```
+
+### Download all assets if more than one files are available
+
+```yaml
+- uses: robinraju/release-downloader@v1.1
+  with:
+    repository: "user/repo"
+    latest: true
+    fileName: "*"
 ```

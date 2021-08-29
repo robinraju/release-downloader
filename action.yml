@@ -15,7 +15,7 @@ inputs:
     default: ""
     required: false
   fileName:
-    description: "Name of the file to download (if empty it will download all assets)"
+    description: "Name of the file to download (use '*' to download all assets other than tarball or zipball)"
     default: ""
     required: false
   tarBall:
