@@ -5,7 +5,7 @@ import * as io from "@actions/io"
 import * as thc from "typed-rest-client/HttpClient"
 import {IReleaseDownloadSettings} from "./download-settings"
 import {GithubRelease, DownloadMetaData} from "./gh-api"
-import {IHeaders} from "typed-rest-client/Interfaces"
+import {IHeaders, IHttpClientResponse} from "typed-rest-client/Interfaces"
 
 const API_ROOT = "https://api.github.com/repos"
 const httpClient: thc.HttpClient = new thc.HttpClient("gh-api-client")
@@ -195,6 +195,11 @@ async function downloadFile(
   outputPath: string,
   token: string
 ): Promise<string> {
+  // Temporary fix for https://github.com/microsoft/typed-rest-client/issues/302
+  const ghClient: thc.HttpClient = new thc.HttpClient("gh-api-client", [], {
+    allowRedirects: false
+  })
+
   const headers: IHeaders = {
     Accept: "application/octet-stream"
   }
@@ -208,20 +213,34 @@ async function downloadFile(
   }
 
   core.info(`Downloading file: ${asset.fileName} to: ${outputPath}`)
-  const response = await httpClient.get(asset.url, headers)
+  const response = await ghClient.get(asset.url, headers)
 
-  if (response.message.statusCode !== 200) {
+  if (response.message.statusCode === 200) {
+    return saveFile(outputPath, asset.fileName, response)
+  } else if (response.message.statusCode === 302) {
+    delete headers["Authorization"]
+    const assetLocation = response.message.headers.location as string
+    const assetResponse = await ghClient.get(assetLocation, headers)
+    return saveFile(outputPath, asset.fileName, assetResponse)
+  } else {
     const err: Error = new Error(
       `Unexpected response: ${response.message.statusCode}`
     )
     throw err
   }
-  const outFilePath: string = path.resolve(outputPath, asset.fileName)
+}
+
+async function saveFile(
+  outputPath: string,
+  fileName: string,
+  httpClientResponse: IHttpClientResponse
+): Promise<string> {
+  const outFilePath: string = path.resolve(outputPath, fileName)
   const fileStream: NodeJS.WritableStream = fs.createWriteStream(outFilePath)
 
   return new Promise((resolve, reject) => {
     fileStream.on("error", err => reject(err))
-    const outStream = response.message.pipe(fileStream)
+    const outStream = httpClientResponse.message.pipe(fileStream)
 
     outStream.on("close", () => {
       resolve(outFilePath)
