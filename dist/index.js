@@ -3627,6 +3627,9 @@ function downloadReleaseAssets(dData, out, token) {
 }
 function downloadFile(asset, outputPath, token) {
     return __awaiter(this, void 0, void 0, function* () {
+        const ghClient = new thc.HttpClient("gh-api-client", [], {
+            allowRedirects: false
+        });
         const headers = {
             Accept: "application/octet-stream"
         };
@@ -3637,16 +3640,29 @@ function downloadFile(asset, outputPath, token) {
             headers["Authorization"] = `token ${token}`;
         }
         core.info(`Downloading file: ${asset.fileName} to: ${outputPath}`);
-        const response = yield httpClient.get(asset.url, headers);
-        if (response.message.statusCode !== 200) {
+        const response = yield ghClient.get(asset.url, headers);
+        if (response.message.statusCode === 200) {
+            return saveFile(outputPath, asset.fileName, response);
+        }
+        else if (response.message.statusCode === 302) {
+            delete headers["Authorization"];
+            const assetLocation = response.message.headers.location;
+            const assetResponse = yield ghClient.get(assetLocation, headers);
+            return saveFile(outputPath, asset.fileName, assetResponse);
+        }
+        else {
             const err = new Error(`Unexpected response: ${response.message.statusCode}`);
             throw err;
         }
-        const outFilePath = path.resolve(outputPath, asset.fileName);
+    });
+}
+function saveFile(outputPath, fileName, httpClientResponse) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const outFilePath = path.resolve(outputPath, fileName);
         const fileStream = fs.createWriteStream(outFilePath);
         return new Promise((resolve, reject) => {
             fileStream.on("error", err => reject(err));
-            const outStream = response.message.pipe(fileStream);
+            const outStream = httpClientResponse.message.pipe(fileStream);
             outStream.on("close", () => {
                 resolve(outFilePath);
             });
