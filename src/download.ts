@@ -1,11 +1,13 @@
-import * as fs from "fs"
-import * as path from "path"
 import * as core from "@actions/core"
+import * as fs from "fs"
 import * as io from "@actions/io"
+import * as path from "path"
 import * as thc from "typed-rest-client/HttpClient"
-import {IReleaseDownloadSettings} from "./download-settings"
-import {GithubRelease, DownloadMetaData} from "./gh-api"
+
+import {DownloadMetaData, GithubRelease} from "./gh-api"
 import {IHeaders, IHttpClientResponse} from "typed-rest-client/Interfaces"
+
+import {IReleaseDownloadSettings} from "./download-settings"
 
 const API_ROOT = "https://api.github.com/repos"
 const httpClient: thc.HttpClient = new thc.HttpClient("gh-api-client")

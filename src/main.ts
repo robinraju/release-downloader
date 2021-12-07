@@ -1,6 +1,7 @@
 import * as core from "@actions/core"
-import {download} from "./download"
 import * as inputHelper from "./input-helper"
+
+import {download} from "./download"
 
 async function run(): Promise<void> {
   try {
@@ -9,7 +10,9 @@ async function run(): Promise<void> {
     const res: string[] = await download(downloadSettings)
     core.info(`Done: ${res}`)
   } catch (error) {
-    core.setFailed(error.message)
+    if (error instanceof Error) {
+      core.setFailed(error.message)
+    }
   }
 }
 
