@@ -236,7 +236,7 @@ async function saveFile(
   httpClientResponse: IHttpClientResponse
 ): Promise<string> {
   const outFilePath: string = path.resolve(outputPath, fileName)
-  const fileStream: NodeJS.WritableStream = fs.createWriteStream(outFilePath)
+  const fileStream: fs.WriteStream = fs.createWriteStream(outFilePath)
 
   return new Promise((resolve, reject) => {
     fileStream.on("error", err => reject(err))
