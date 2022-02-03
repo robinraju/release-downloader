@@ -21,7 +21,7 @@ jobs:
         node-version: '16'
         cache: 'npm'
 
-    - name: Build andd test  
+    - name: Build and test  
       run: |
         npm install
         npm run all
