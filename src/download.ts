@@ -72,6 +72,7 @@ async function getlatestRelease(
   const responseBody = await response.readBody()
   const _release: GithubRelease = JSON.parse(responseBody.toString())
 
+  core.info(`Found latest release version: ${_release.tag_name}`)
   return _release
 }
 

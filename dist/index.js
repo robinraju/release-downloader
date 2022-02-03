@@ -3935,6 +3935,7 @@ function getlatestRelease(repoPath, token) {
         }
         const responseBody = yield response.readBody();
         const _release = JSON.parse(responseBody.toString());
+        core.info(`Found latest release version: ${_release.tag_name}`);
         return _release;
     });
 }
