@@ -28,7 +28,7 @@
   "license": "MIT",
   "dependencies": {
     "@actions/core": "^1.6.0",
-    "@actions/io": "^1.1.1",
+    "@actions/io": "^1.1.2",
     "typed-rest-client": "^1.8.5"
   },
   "devDependencies": {
