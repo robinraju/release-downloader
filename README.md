@@ -46,13 +46,13 @@ A Github Action to download assets from github release. It can download specifie
 
 ## Scenarios
 
-### Download asset from the latest release
+### Download asset from the latest release in the current repository
 
 ```yaml
 
 - uses: robinraju/release-downloader@v1.3
   with:
-    repository: "user/repo"
+    repository: ${{ github.reposiotry }}
     latest: true
     fileName: "foo.zip"
 ```
@@ -63,7 +63,7 @@ A Github Action to download assets from github release. It can download specifie
 
 - uses: robinraju/release-downloader@v1.3
   with:
-    repository: "user/repo"
+    repository: "owner/repo"
     tag: "v1.0.0"
     fileName: "foo.zip"
 ```
@@ -74,7 +74,7 @@ A Github Action to download assets from github release. It can download specifie
 
 - uses: robinraju/release-downloader@v1.3
   with:
-    repository: "user/repo"
+    repository: "owner/repo"
     latest: true
     tarBall: true
     zipBall: true
@@ -86,7 +86,7 @@ A Github Action to download assets from github release. It can download specifie
 ```yaml
 - uses: robinraju/release-downloader@v1.3
   with:
-    repository: "user/repo"
+    repository: "owner/repo"
     latest: true
     fileName: "foo.zip"
     tarBall: true
@@ -98,7 +98,7 @@ A Github Action to download assets from github release. It can download specifie
 ```yaml
 - uses: robinraju/release-downloader@v1.3
   with:
-    repository: "user/repo"
+    repository: "owner/repo"
     latest: true
     fileName: "*"
 ```
