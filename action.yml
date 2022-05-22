@@ -4,8 +4,8 @@ author: "Robin Raju"
 inputs:
   repository:
     description: "The source repository path. Expected format {owner}/{repo}"
-    default: ""
-    required: true
+    default: ${{ github.repository }}
+    required: false
   latest:
     description: "A flag to choose between latest release and remaining releases"
     default: "false"

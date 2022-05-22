@@ -12,6 +12,7 @@ A Github Action to download assets from github release. It can download specifie
   with: 
     # The source repository path.
     # Expected format {owner}/{repo}
+    # Default: ${{ github.repository }}
     repository: ""
     
     # A flag to set the download target as latest release
@@ -52,7 +53,6 @@ A Github Action to download assets from github release. It can download specifie
 
 - uses: robinraju/release-downloader@v1.3
   with:
-    repository: ${{ github.reposiotry }}
     latest: true
     fileName: "foo.zip"
 ```
