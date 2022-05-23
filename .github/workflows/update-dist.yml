@@ -1,0 +1,53 @@
+# `dist/index.js` is a special file in Actions.
+# When you reference an action with `uses:` in a workflow,
+# `index.js` is the code that will run.
+# We generate this file through a build process from other source files.
+# We need to make sure the checked-in `index.js` actually matches what we expect it to be.
+name: Update dist
+
+on:
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - '**.md'
+  workflow_dispatch:
+
+jobs:
+  check-dist:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set Node.js 16.x
+        uses: actions/setup-node@v3
+        with:
+          node-version: 16
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Rebuild the index.js file
+        run: npm run build
+
+      - name: Push changes to main if any
+        env:
+          GIT_NAME: github-actions[bot]
+          GIT_EMAIL: github-actions[bot]@users.noreply.github.com
+        run: |
+          if [ -n "$(git status -s)" ]; then
+              git config user.name "$GIT_NAME"
+              git config user.email "$GIT_EMAIL"
+
+              git fetch --depth=1
+              git checkout -B main || (echo "::error::Unable to switch to branch main" && exit 1)
+              git add .
+              git commit --message="Build and update dist" --author="$GIT_NAME <$GIT_EMAIL>"
+              git push --set-upstream origin "HEAD:main" --atomic || (echo "::error::Unable to push to branch" && exit 1)
+              echo "Changes have been pushed to branch main 🚀"
+          else
+              echo "Working tree clean. Nothing to commit."
+          fi
+    

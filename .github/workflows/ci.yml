@@ -1,4 +1,4 @@
-name: "CI"
+name: "Build and Test"
 on:
   pull_request:
   push:
@@ -13,10 +13,10 @@ jobs:
     steps:
     
     - name: Checkout Repo
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
 
     - name: Setup node and cache dependencies
-      uses: actions/setup-node@v2
+      uses: actions/setup-node@v3
       with:
         node-version: 16
         cache: 'npm'
