@@ -46,7 +46,7 @@ jobs:
         out-file-path: "./test-downloads"
           
     - name: List downloaded files
-      run: ls -lrth release-test
+      run: ls -lrth test-downloads
 
     - name: Test download from a private repo
       uses: ./
