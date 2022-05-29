@@ -32,7 +32,7 @@ inputs:
     required: true
   token:
     description: "Github token to access private repos"
-    default: ""
+    default: ${{ github.token }}
     required: false
 runs:
   using: "node16"

@@ -1,7 +1,9 @@
-import {download} from "../src/download"
 import {IReleaseDownloadSettings} from "../src/download-settings"
+import {download} from "../src/download"
 
 test("run download", async () => {
+  
+  const githubtoken = process.env.GITHUB_TOKEN ?? ""
   const downloadSettings: IReleaseDownloadSettings = {
     sourceRepoPath: "lihaoyi/Ammonite",
     isLatest: false,
@@ -10,7 +12,7 @@ test("run download", async () => {
     tarBall: false,
     zipBall: false,
     outFilePath: "./target",
-    token: ""
+    token: githubtoken
   }
   await download(downloadSettings)
 }, 10000)
