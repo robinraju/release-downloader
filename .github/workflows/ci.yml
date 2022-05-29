@@ -46,6 +46,7 @@ jobs:
         out-file-path: "./test-downloads"
           
     - name: List downloaded files
+      shell: bash
       run: ls -lrth test-downloads
 
     - name: Test download from a private repo
@@ -60,4 +61,5 @@ jobs:
         out-file-path: "./downloader-test"
 
     - name: List downloaded files from private repo
+      shell: bash
       run: ls -lrth downloader-test
