@@ -33,9 +33,4 @@ export interface IReleaseDownloadSettings {
    * Target path to download the file
    */
   outFilePath: string
-
-  /**
-   * Github access token to download from private repos (Optional)
-   */
-  token: string
 }

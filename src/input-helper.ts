@@ -1,5 +1,6 @@
 import * as core from "@actions/core"
 import * as path from "path"
+
 import {IReleaseDownloadSettings} from "./download-settings"
 
 export function getInputs(): IReleaseDownloadSettings {
@@ -41,8 +42,6 @@ export function getInputs(): IReleaseDownloadSettings {
 
   const outFilePath = core.getInput("out-file-path") || "."
   downloadSettings.outFilePath = path.resolve(githubWorkspacePath, outFilePath)
-
-  downloadSettings.token = core.getInput("token")
 
   return downloadSettings
 }
