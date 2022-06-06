@@ -1,8 +1,19 @@
+import * as thc from "typed-rest-client/HttpClient"
+
 import {IReleaseDownloadSettings} from "../src/download-settings"
-import {download} from "../src/download"
+import {ReleaseDownloader} from "../src/release-downloader"
+
+let downloader: ReleaseDownloader
+let httpClent: thc.HttpClient
+
+beforeAll(() => {
+  httpClent = new thc.HttpClient("gh-api-client", [], {
+    allowRedirects: false
+  })
+  downloader = new ReleaseDownloader(httpClent)
+})
 
 test("run download", async () => {
-  
   const githubtoken = process.env.GITHUB_TOKEN ?? ""
   const downloadSettings: IReleaseDownloadSettings = {
     sourceRepoPath: "lihaoyi/Ammonite",
@@ -14,5 +25,5 @@ test("run download", async () => {
     outFilePath: "./target",
     token: githubtoken
   }
-  await download(downloadSettings)
+  await downloader.download(downloadSettings)
 }, 10000)
