@@ -19,32 +19,27 @@ export class ReleaseDownloader {
   }
 
   async download(
-    _downloadSettings: IReleaseDownloadSettings
+    downloadSettings: IReleaseDownloadSettings
   ): Promise<string[]> {
     let ghRelease: GithubRelease
 
-    if (_downloadSettings.isLatest) {
-      ghRelease = await this.getlatestRelease(
-        _downloadSettings.sourceRepoPath,
-        _downloadSettings.token
-      )
+    if (downloadSettings.isLatest) {
+      ghRelease = await this.getlatestRelease(downloadSettings.sourceRepoPath)
     } else {
       ghRelease = await this.getReleaseByTag(
-        _downloadSettings.sourceRepoPath,
-        _downloadSettings.tag,
-        _downloadSettings.token
+        downloadSettings.sourceRepoPath,
+        downloadSettings.tag
       )
     }
 
     const resolvedAssets: DownloadMetaData[] = this.resolveAssets(
       ghRelease,
-      _downloadSettings
+      downloadSettings
     )
 
     return await this.downloadReleaseAssets(
       resolvedAssets,
-      _downloadSettings.outFilePath,
-      _downloadSettings.token
+      downloadSettings.outFilePath
     )
   }
 
@@ -52,16 +47,10 @@ export class ReleaseDownloader {
    * Gets the latest release metadata from github api
    * @param repoPath The source repository path. {owner}/{repo}
    */
-  private async getlatestRelease(
-    repoPath: string,
-    token: string
-  ): Promise<GithubRelease> {
+  private async getlatestRelease(repoPath: string): Promise<GithubRelease> {
     core.info(`Fetching latest release for repo ${repoPath}`)
 
     const headers: IHeaders = {Accept: "application/vnd.github.v3+json"}
-    if (token !== "") {
-      headers["Authorization"] = `token ${token}`
-    }
 
     const response = await this.httpClient.get(
       `${this._apiRoot}/${repoPath}/releases/latest`,
@@ -76,10 +65,10 @@ export class ReleaseDownloader {
     }
 
     const responseBody = await response.readBody()
-    const _release: GithubRelease = JSON.parse(responseBody.toString())
+    const release: GithubRelease = JSON.parse(responseBody.toString())
 
-    core.info(`Found latest release version: ${_release.tag_name}`)
-    return _release
+    core.info(`Found latest release version: ${release.tag_name}`)
+    return release
   }
 
   /**
@@ -89,8 +78,7 @@ export class ReleaseDownloader {
    */
   private async getReleaseByTag(
     repoPath: string,
-    tag: string,
-    token: string
+    tag: string
   ): Promise<GithubRelease> {
     core.info(`Fetching release ${tag} from repo ${repoPath}`)
 
@@ -99,9 +87,6 @@ export class ReleaseDownloader {
     }
 
     const headers: IHeaders = {Accept: "application/vnd.github.v3+json"}
-    if (token !== "") {
-      headers["Authorization"] = `token ${token}`
-    }
 
     const response = await this.httpClient.get(
       `${this._apiRoot}/${repoPath}/releases/tags/${tag}`,
@@ -116,21 +101,22 @@ export class ReleaseDownloader {
     }
 
     const responseBody = await response.readBody()
-    const _release: GithubRelease = JSON.parse(responseBody.toString())
+    const release: GithubRelease = JSON.parse(responseBody.toString())
+    core.info(`Found release tag: ${release.tag_name}`)
 
-    return _release
+    return release
   }
 
   private resolveAssets(
-    _release: GithubRelease,
-    _settings: IReleaseDownloadSettings
+    ghRelease: GithubRelease,
+    downloadSettings: IReleaseDownloadSettings
   ): DownloadMetaData[] {
     const downloads: DownloadMetaData[] = []
 
-    if (_release && _release.assets.length > 0) {
-      if (_settings.fileName === "*") {
+    if (ghRelease && ghRelease.assets.length > 0) {
+      if (downloadSettings.fileName === "*") {
         // Download all assets
-        for (const asset of _release.assets) {
+        for (const asset of ghRelease.assets) {
           const dData: DownloadMetaData = {
             fileName: asset["name"],
             url: asset["url"],
@@ -139,7 +125,9 @@ export class ReleaseDownloader {
           downloads.push(dData)
         }
       } else {
-        const asset = _release.assets.find(a => a.name === _settings.fileName)
+        const asset = ghRelease.assets.find(
+          a => a.name === downloadSettings.fileName
+        )
         if (asset) {
           const dData: DownloadMetaData = {
             fileName: asset["name"],
@@ -151,20 +139,20 @@ export class ReleaseDownloader {
       }
     }
 
-    if (_settings.tarBall) {
-      const fName = _settings.sourceRepoPath.split("/")[1]
+    if (downloadSettings.tarBall) {
+      const fName = downloadSettings.sourceRepoPath.split("/")[1]
       downloads.push({
-        fileName: `${fName}-${_release.name}.tar.gz`,
-        url: _release.tarball_url,
+        fileName: `${fName}-${ghRelease.name}.tar.gz`,
+        url: ghRelease.tarball_url,
         isTarBallOrZipBall: true
       })
     }
 
-    if (_settings.zipBall) {
-      const fName = _settings.sourceRepoPath.split("/")[1]
+    if (downloadSettings.zipBall) {
+      const fName = downloadSettings.sourceRepoPath.split("/")[1]
       downloads.push({
-        fileName: `${fName}-${_release.name}.zip`,
-        url: _release.zipball_url,
+        fileName: `${fName}-${ghRelease.name}.zip`,
+        url: ghRelease.zipball_url,
         isTarBallOrZipBall: true
       })
     }
@@ -176,12 +164,10 @@ export class ReleaseDownloader {
    * Downloads the specified assets from a given URL
    * @param dData The download metadata
    * @param out Target directory
-   * @param token Personal access token to for private repos
    */
   private async downloadReleaseAssets(
     dData: DownloadMetaData[],
-    out: string,
-    token: string
+    out: string
   ): Promise<string[]> {
     const outFileDir = path.resolve(out)
 
@@ -192,7 +178,7 @@ export class ReleaseDownloader {
     const downloads: Promise<string>[] = []
 
     for (const asset of dData) {
-      downloads.push(this.downloadFile(asset, out, token))
+      downloads.push(this.downloadFile(asset, out))
     }
 
     const result = await Promise.all(downloads)
@@ -201,8 +187,7 @@ export class ReleaseDownloader {
 
   private async downloadFile(
     asset: DownloadMetaData,
-    outputPath: string,
-    token: string
+    outputPath: string
   ): Promise<string> {
     const headers: IHeaders = {
       Accept: "application/octet-stream"
@@ -212,20 +197,11 @@ export class ReleaseDownloader {
       headers["Accept"] = "*/*"
     }
 
-    if (token !== "") {
-      headers["Authorization"] = `token ${token}`
-    }
-
     core.info(`Downloading file: ${asset.fileName} to: ${outputPath}`)
     const response = await this.httpClient.get(asset.url, headers)
 
     if (response.message.statusCode === 200) {
       return this.saveFile(outputPath, asset.fileName, response)
-    } else if (response.message.statusCode === 302) {
-      delete headers["Authorization"]
-      const assetLocation = response.message.headers.location as string
-      const assetResponse = await this.httpClient.get(assetLocation, headers)
-      return this.saveFile(outputPath, asset.fileName, assetResponse)
     } else {
       const err: Error = new Error(
         `Unexpected response: ${response.message.statusCode}`
