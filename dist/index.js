@@ -263,15 +263,17 @@ class ReleaseDownloader {
             }
         }
         if (downloadSettings.tarBall) {
+            const repoName = downloadSettings.sourceRepoPath.split("/")[1];
             downloads.push({
-                fileName: `${ghRelease.tag_name}.tar.gz`,
+                fileName: `${repoName}-${ghRelease.tag_name}.tar.gz`,
                 url: ghRelease.tarball_url,
                 isTarBallOrZipBall: true
             });
         }
         if (downloadSettings.zipBall) {
+            const repoName = downloadSettings.sourceRepoPath.split("/")[1];
             downloads.push({
-                fileName: `${ghRelease.tag_name}.zip`,
+                fileName: `${repoName}-${ghRelease.tag_name}.zip`,
                 url: ghRelease.zipball_url,
                 isTarBallOrZipBall: true
             });
