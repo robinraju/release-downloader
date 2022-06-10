@@ -263,17 +263,15 @@ class ReleaseDownloader {
             }
         }
         if (downloadSettings.tarBall) {
-            const fName = downloadSettings.sourceRepoPath.split("/")[1];
             downloads.push({
-                fileName: `${fName}-${ghRelease.name}.tar.gz`,
+                fileName: `${ghRelease.tag_name}.tar.gz`,
                 url: ghRelease.tarball_url,
                 isTarBallOrZipBall: true
             });
         }
         if (downloadSettings.zipBall) {
-            const fName = downloadSettings.sourceRepoPath.split("/")[1];
             downloads.push({
-                fileName: `${fName}-${ghRelease.name}.zip`,
+                fileName: `${ghRelease.tag_name}.zip`,
                 url: ghRelease.zipball_url,
                 isTarBallOrZipBall: true
             });
@@ -4994,7 +4992,7 @@ class HttpClientResponse {
     }
     readBody() {
         return new Promise((resolve, reject) => __awaiter(this, void 0, void 0, function* () {
-            let buffer = Buffer.alloc(0);
+            const chunks = [];
             const encodingCharset = util.obtainContentCharset(this);
             // Extract Encoding from header: 'content-encoding'
             // Match `gzip`, `gzip, deflate` variations of GZIP encoding
@@ -5002,9 +5000,10 @@ class HttpClientResponse {
             const isGzippedEncoded = new RegExp('(gzip$)|(gzip, *deflate)').test(contentEncoding);
             this.message.on('data', function (data) {
                 const chunk = (typeof data === 'string') ? Buffer.from(data, encodingCharset) : data;
-                buffer = Buffer.concat([buffer, chunk]);
+                chunks.push(chunk);
             }).on('end', function () {
                 return __awaiter(this, void 0, void 0, function* () {
+                    const buffer = Buffer.concat(chunks);
                     if (isGzippedEncoded) { // Process GZipped Response Body HERE
                         const gunzippedBody = yield util.decompressGzippedContent(buffer, encodingCharset);
                         resolve(gunzippedBody);
@@ -5535,7 +5534,9 @@ function decompressGzippedContent(buffer, charset) {
                 if (error) {
                     reject(error);
                 }
-                resolve(buffer.toString(charset || 'utf-8'));
+                else {
+                    resolve(buffer.toString(charset || 'utf-8'));
+                }
             });
         }));
     });

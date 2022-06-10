@@ -140,18 +140,16 @@ export class ReleaseDownloader {
     }
 
     if (downloadSettings.tarBall) {
-      const fName = downloadSettings.sourceRepoPath.split("/")[1]
       downloads.push({
-        fileName: `${fName}-${ghRelease.name}.tar.gz`,
+        fileName: `${ghRelease.tag_name}.tar.gz`,
         url: ghRelease.tarball_url,
         isTarBallOrZipBall: true
       })
     }
 
     if (downloadSettings.zipBall) {
-      const fName = downloadSettings.sourceRepoPath.split("/")[1]
       downloads.push({
-        fileName: `${fName}-${ghRelease.name}.zip`,
+        fileName: `${ghRelease.tag_name}.zip`,
         url: ghRelease.zipball_url,
         isTarBallOrZipBall: true
       })
