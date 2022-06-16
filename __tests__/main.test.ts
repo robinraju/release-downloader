@@ -6,12 +6,11 @@ import * as thc from "typed-rest-client/HttpClient"
 
 import {IReleaseDownloadSettings} from "../src/download-settings"
 import {ReleaseDownloader} from "../src/release-downloader"
-
-const nock = require("nock")
+import nock from "nock"
 
 let downloader: ReleaseDownloader
 let httpClent: thc.HttpClient
-const outputFilePath = "./target"
+const outputFilePath = "./test-output"
 
 beforeEach(() => {
   const githubtoken = process.env.REPO_TOKEN || ""
@@ -64,8 +63,8 @@ beforeEach(() => {
     .replyWithFile(200, __dirname + "/resource/assets/file_example.csv")
 })
 
-afterEach(() => {
-  io.rmRF(outputFilePath)
+afterEach(async () => {
+  await io.rmRF(outputFilePath)
 })
 
 function readFromFile(fileName: string): string {
@@ -141,7 +140,6 @@ test("Download multiple pdf files with wildcard filename", async () => {
     outFilePath: outputFilePath
   }
   const result = await downloader.download(downloadSettings)
-  core.info(`Result from download: ${result}`)
   expect(result.length).toBe(2)
 }, 10000)
 
@@ -156,6 +154,5 @@ test("Download a csv file with wildcard filename", async () => {
     outFilePath: outputFilePath
   }
   const result = await downloader.download(downloadSettings)
-  core.info(`Result from download: ${result}`)
   expect(result.length).toBe(1)
 }, 10000)
