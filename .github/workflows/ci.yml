@@ -30,7 +30,8 @@ jobs:
         node-version: 16
         cache: 'npm'
 
-    - name: Build and test  
+    - name: Build and test 
+      shell: bash
       run: |
         npm ci
         npm run all
