@@ -114,9 +114,18 @@ export class ReleaseDownloader {
     const downloads: DownloadMetaData[] = []
 
     if (ghRelease && ghRelease.assets.length > 0) {
-      if (downloadSettings.fileName === "*") {
+      if (downloadSettings.fileName.includes("*")) {
         // Download all assets
         for (const asset of ghRelease.assets) {
+          if (
+            !new RegExp(
+              `^${downloadSettings.fileName.replace(/\*/g, "(.)*")}$`,
+              ""
+            ).test(asset["name"])
+          ) {
+            continue
+          }
+
           const dData: DownloadMetaData = {
             fileName: asset["name"],
             url: asset["url"],

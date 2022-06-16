@@ -13,7 +13,7 @@ let downloader: ReleaseDownloader
 let httpClent: thc.HttpClient
 const outputFilePath = "./target"
 
-beforeAll(() => {
+beforeEach(() => {
   const githubtoken = process.env.REPO_TOKEN || ""
 
   const credentialHandler = new handlers.BearerCredentialHandler(
@@ -32,19 +32,49 @@ beforeAll(() => {
   })
     .get("/repos/robinraju/probable-potato/releases/assets/66946546")
     .replyWithFile(200, __dirname + "/resource/assets/test-1.txt")
+
+  nock("https://api.github.com", {
+    reqheaders: {accept: "application/octet-stream"}
+  })
+    .get("/repos/robinraju/probable-potato/releases/assets/66946547")
+    .replyWithFile(200, __dirname + "/resource/assets/test-2.txt")
+
+  nock("https://api.github.com", {
+    reqheaders: {accept: "application/octet-stream"}
+  })
+    .get("/repos/robinraju/probable-potato/releases/assets/66946548")
+    .replyWithFile(200, __dirname + "/resource/assets/3-test.txt")
+
+  nock("https://api.github.com", {
+    reqheaders: {accept: "application/octet-stream"}
+  })
+    .get("/repos/robinraju/probable-potato/releases/assets/66946549")
+    .replyWithFile(200, __dirname + "/resource/assets/downloader-test.pdf")
+
+  nock("https://api.github.com", {
+    reqheaders: {accept: "application/octet-stream"}
+  })
+    .get("/repos/robinraju/probable-potato/releases/assets/66946550")
+    .replyWithFile(200, __dirname + "/resource/assets/lorem-ipsum.pdf")
+
+  nock("https://api.github.com", {
+    reqheaders: {accept: "application/octet-stream"}
+  })
+    .get("/repos/robinraju/probable-potato/releases/assets/66946551")
+    .replyWithFile(200, __dirname + "/resource/assets/file_example.csv")
 })
 
-afterAll(() => {
+afterEach(() => {
   io.rmRF(outputFilePath)
 })
 
 function readFromFile(fileName: string): string {
-  return fs.readFileSync(`./__tests__/resource/${fileName}`, {
+  return fs.readFileSync(`${__dirname}/resource/${fileName}`, {
     encoding: "utf-8"
   })
 }
 
-test("Download from public repo", async () => {
+test("Download all files from public repo", async () => {
   const downloadSettings: IReleaseDownloadSettings = {
     sourceRepoPath: "robinraju/probable-potato",
     isLatest: true,
@@ -55,5 +85,77 @@ test("Download from public repo", async () => {
     outFilePath: outputFilePath
   }
   const result = await downloader.download(downloadSettings)
+  expect(result.length).toBe(6)
+}, 10000)
+
+test("Download single file from public repo", async () => {
+  const downloadSettings: IReleaseDownloadSettings = {
+    sourceRepoPath: "robinraju/probable-potato",
+    isLatest: true,
+    tag: "",
+    fileName: "test-1.txt",
+    tarBall: false,
+    zipBall: false,
+    outFilePath: outputFilePath
+  }
+  const result = await downloader.download(downloadSettings)
+  expect(result.length).toBe(1)
+}, 10000)
+
+test("Download files with wildcard from public repo", async () => {
+  const downloadSettings: IReleaseDownloadSettings = {
+    sourceRepoPath: "robinraju/probable-potato",
+    isLatest: true,
+    tag: "",
+    fileName: "test-*.txt",
+    tarBall: false,
+    zipBall: false,
+    outFilePath: outputFilePath
+  }
+  const result = await downloader.download(downloadSettings)
+  expect(result.length).toBe(2)
+}, 10000)
+
+test("Download single file with wildcard from public repo", async () => {
+  const downloadSettings: IReleaseDownloadSettings = {
+    sourceRepoPath: "robinraju/probable-potato",
+    isLatest: true,
+    tag: "",
+    fileName: "3-*.txt",
+    tarBall: false,
+    zipBall: false,
+    outFilePath: outputFilePath
+  }
+  const result = await downloader.download(downloadSettings)
+  expect(result.length).toBe(1)
+}, 10000)
+
+test("Download multiple pdf files with wildcard filename", async () => {
+  const downloadSettings: IReleaseDownloadSettings = {
+    sourceRepoPath: "robinraju/probable-potato",
+    isLatest: true,
+    tag: "",
+    fileName: "*.pdf",
+    tarBall: false,
+    zipBall: false,
+    outFilePath: outputFilePath
+  }
+  const result = await downloader.download(downloadSettings)
+  core.info(`Result from download: ${result}`)
+  expect(result.length).toBe(2)
+}, 10000)
+
+test("Download a csv file with wildcard filename", async () => {
+  const downloadSettings: IReleaseDownloadSettings = {
+    sourceRepoPath: "robinraju/probable-potato",
+    isLatest: true,
+    tag: "",
+    fileName: "*.csv",
+    tarBall: false,
+    zipBall: false,
+    outFilePath: outputFilePath
+  }
+  const result = await downloader.download(downloadSettings)
+  core.info(`Result from download: ${result}`)
   expect(result.length).toBe(1)
 }, 10000)
