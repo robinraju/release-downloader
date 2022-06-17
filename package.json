@@ -5,12 +5,13 @@
   "description": "Github action to download release assets",
   "main": "lib/main.js",
   "scripts": {
-    "build": "tsc && ncc build",
+    "build": "tsc",
     "format": "prettier --write **/*.ts",
     "format-check": "prettier --check **/*.ts",
     "lint": "eslint src/**/*.ts",
+    "package": "ncc build --license licenses.txt",
     "test": "jest",
-    "all": "npm run format && npm run lint && npm run build && npm test"
+    "all": "npm run build && npm run format && npm run lint && npm run package && npm test"
   },
   "repository": {
     "type": "git",
