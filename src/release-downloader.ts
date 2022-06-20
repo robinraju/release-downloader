@@ -12,10 +12,11 @@ import {IReleaseDownloadSettings} from "./download-settings"
 export class ReleaseDownloader {
   private httpClient: thc.HttpClient
 
-  private _apiRoot = "https://api.github.com/repos"
+  private apiRoot: string
 
-  constructor(httpClient: thc.HttpClient) {
+  constructor(httpClient: thc.HttpClient, githubApiUrl: string) {
     this.httpClient = httpClient
+    this.apiRoot = githubApiUrl
   }
 
   async download(
@@ -53,7 +54,7 @@ export class ReleaseDownloader {
     const headers: IHeaders = {Accept: "application/vnd.github.v3+json"}
 
     const response = await this.httpClient.get(
-      `${this._apiRoot}/${repoPath}/releases/latest`,
+      `${this.apiRoot}/repos/${repoPath}/releases/latest`,
       headers
     )
 
@@ -89,7 +90,7 @@ export class ReleaseDownloader {
     const headers: IHeaders = {Accept: "application/vnd.github.v3+json"}
 
     const response = await this.httpClient.get(
-      `${this._apiRoot}/${repoPath}/releases/tags/${tag}`,
+      `${this.apiRoot}/repos/${repoPath}/releases/tags/${tag}`,
       headers
     )
 

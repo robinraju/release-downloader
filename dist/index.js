@@ -113,11 +113,12 @@ function run() {
         try {
             const downloadSettings = inputHelper.getInputs();
             const authToken = core.getInput("token");
+            const githubApiUrl = core.getInput("github-api-url");
             const credentialHandler = new handlers.BearerCredentialHandler(authToken, false);
             const httpClient = new thc.HttpClient("gh-api-client", [
                 credentialHandler
             ]);
-            const downloader = new release_downloader_1.ReleaseDownloader(httpClient);
+            const downloader = new release_downloader_1.ReleaseDownloader(httpClient, githubApiUrl);
             const res = yield downloader.download(downloadSettings);
             core.info(`Done: ${res}`);
         }
@@ -177,9 +178,9 @@ const fs = __importStar(__nccwpck_require__(7147));
 const io = __importStar(__nccwpck_require__(7436));
 const path = __importStar(__nccwpck_require__(1017));
 class ReleaseDownloader {
-    constructor(httpClient) {
-        this._apiRoot = "https://api.github.com/repos";
+    constructor(httpClient, githubApiUrl) {
         this.httpClient = httpClient;
+        this.apiRoot = githubApiUrl;
     }
     download(downloadSettings) {
         return __awaiter(this, void 0, void 0, function* () {
@@ -202,7 +203,7 @@ class ReleaseDownloader {
         return __awaiter(this, void 0, void 0, function* () {
             core.info(`Fetching latest release for repo ${repoPath}`);
             const headers = { Accept: "application/vnd.github.v3+json" };
-            const response = yield this.httpClient.get(`${this._apiRoot}/${repoPath}/releases/latest`, headers);
+            const response = yield this.httpClient.get(`${this.apiRoot}/repos/${repoPath}/releases/latest`, headers);
             if (response.message.statusCode !== 200) {
                 const err = new Error(`[getlatestRelease] Unexpected response: ${response.message.statusCode}`);
                 throw err;
@@ -225,7 +226,7 @@ class ReleaseDownloader {
                 throw new Error("Config error: Please input a valid tag");
             }
             const headers = { Accept: "application/vnd.github.v3+json" };
-            const response = yield this.httpClient.get(`${this._apiRoot}/${repoPath}/releases/tags/${tag}`, headers);
+            const response = yield this.httpClient.get(`${this.apiRoot}/repos/${repoPath}/releases/tags/${tag}`, headers);
             if (response.message.statusCode !== 200) {
                 const err = new Error(`[getReleaseByTag] Unexpected response: ${response.message.statusCode}`);
                 throw err;

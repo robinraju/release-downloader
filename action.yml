@@ -34,6 +34,10 @@ inputs:
     description: "Github token to access private repos"
     default: ${{ github.token }}
     required: false
+  github-api-url:
+    description: "The URL of the Github API, only use this input if you are using Github Enterprise"
+    default: "https://api.github.com"
+    required: false
 runs:
   using: "node16"
   main: "dist/index.js"

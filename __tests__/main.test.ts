@@ -14,13 +14,14 @@ const outputFilePath = "./test-output"
 
 beforeEach(() => {
   const githubtoken = process.env.REPO_TOKEN || ""
+  const githubApiUrl = "https://api.github.com"
 
   const credentialHandler = new handlers.BearerCredentialHandler(
     githubtoken,
     false
   )
   httpClent = new thc.HttpClient("gh-api-client", [credentialHandler])
-  downloader = new ReleaseDownloader(httpClent)
+  downloader = new ReleaseDownloader(httpClent, githubApiUrl)
 
   nock("https://api.github.com")
     .get("/repos/robinraju/probable-potato/releases/latest")
@@ -61,6 +62,16 @@ beforeEach(() => {
   })
     .get("/repos/robinraju/probable-potato/releases/assets/66946551")
     .replyWithFile(200, __dirname + "/resource/assets/file_example.csv")
+
+  nock("https://my-gh-host.com/api/v3")
+    .get("/repos/my-enterprise/test-repo/releases/latest")
+    .reply(200, readFromFile("2-gh-enterprise.json"))
+
+  nock("https://my-gh-host.com/api/v3", {
+    reqheaders: {accept: "application/octet-stream"}
+  })
+    .get("/repos/my-enterprise/test-repo/releases/assets/66946546")
+    .replyWithFile(200, __dirname + "/resource/assets/test-1.txt")
 })
 
 afterEach(async () => {
@@ -149,6 +160,22 @@ test("Download a csv file with wildcard filename", async () => {
     isLatest: true,
     tag: "",
     fileName: "*.csv",
+    tarBall: false,
+    zipBall: false,
+    outFilePath: outputFilePath
+  }
+  const result = await downloader.download(downloadSettings)
+  expect(result.length).toBe(1)
+}, 10000)
+
+test("Download file from Github Enterprise server", async () => {
+  downloader = new ReleaseDownloader(httpClent, "https://my-gh-host.com/api/v3")
+
+  const downloadSettings: IReleaseDownloadSettings = {
+    sourceRepoPath: "my-enterprise/test-repo",
+    isLatest: true,
+    tag: "",
+    fileName: "test-1.txt",
     tarBall: false,
     zipBall: false,
     outFilePath: outputFilePath

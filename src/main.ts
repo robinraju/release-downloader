@@ -9,6 +9,7 @@ async function run(): Promise<void> {
   try {
     const downloadSettings = inputHelper.getInputs()
     const authToken = core.getInput("token")
+    const githubApiUrl = core.getInput("github-api-url")
 
     const credentialHandler = new handlers.BearerCredentialHandler(
       authToken,
@@ -18,7 +19,7 @@ async function run(): Promise<void> {
       credentialHandler
     ])
 
-    const downloader = new ReleaseDownloader(httpClient)
+    const downloader = new ReleaseDownloader(httpClient, githubApiUrl)
 
     const res: string[] = await downloader.download(downloadSettings)
     core.info(`Done: ${res}`)

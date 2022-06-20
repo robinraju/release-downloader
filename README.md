@@ -43,6 +43,11 @@ A Github Action to download assets from github release. It can download specifie
     # https://docs.github.com/en/actions/configuring-and-managing-workflows/creating-and-storing-encrypted-secrets
     # eg: token: ${{ secrets.MY_TOKEN }}
     token: ""
+
+    # The URL of the Github API, only use this input if you are using Github Enterprise
+    # Default: "https://api.github.com"
+    # Use http(s)://[hostname]/api/v3 to access the API for GitHub Enterprise Server
+    github-api-url: ""
 ```
 
 ## Scenarios
