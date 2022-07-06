@@ -38,6 +38,7 @@ jobs:
     
     - name: Run action
       uses: ./
+      id: download-public
       with: 
         repository: "robinraju/probable-potato"
         tag: "1.0.1"
@@ -52,6 +53,7 @@ jobs:
 
     - name: Test download from a private repo
       uses: ./
+      id: download-private
       with:
         repository: "robinraju/release-downloader-test"
         latest: true
@@ -64,3 +66,16 @@ jobs:
     - name: List downloaded files from private repo
       shell: bash
       run: ls -lrth downloader-test
+
+    - name: Read output variable set by previous steps
+      shell: bash
+      run: |
+        if [ -n ${{steps.download-public.outputs.tag_name}} ]; then
+          echo ${{steps.download-public.outputs.tag_name}}
+        else echo "Unable to read output variable from step download-public"; exit 1
+        fi
+
+        if [ -n ${{steps.download-private.outputs.tag_name}} ]; then
+          echo ${{steps.download-private.outputs.tag_name}}
+        else echo "Unable to read output variable from step download-private"; exit 1
+        fi

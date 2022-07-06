@@ -191,6 +191,8 @@ class ReleaseDownloader {
             else {
                 ghRelease = yield this.getReleaseByTag(downloadSettings.sourceRepoPath, downloadSettings.tag);
             }
+            // Set the output variables for use by other actions
+            core.setOutput("tag_name", ghRelease.tag_name);
             const resolvedAssets = this.resolveAssets(ghRelease, downloadSettings);
             return yield this.downloadReleaseAssets(resolvedAssets, downloadSettings.outFilePath);
         });
