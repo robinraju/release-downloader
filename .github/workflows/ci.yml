@@ -68,6 +68,7 @@ jobs:
       run: ls -lrth downloader-test
 
     - name: Read output variable set by previous steps
+      shell: bash
       run: |
         if [ -n ${{steps.download-public.outputs.tag_name}} ]; then
           echo ${{steps.download-public.outputs.tag_name}}
