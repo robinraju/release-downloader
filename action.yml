@@ -38,6 +38,10 @@ inputs:
     description: "The URL of the Github API, only use this input if you are using Github Enterprise"
     default: "https://api.github.com"
     required: false
+outputs:
+  tag_name:
+    description: "The github tag used to download the release"
+
 runs:
   using: "node16"
   main: "dist/index.js"

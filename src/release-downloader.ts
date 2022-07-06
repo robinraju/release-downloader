@@ -33,6 +33,9 @@ export class ReleaseDownloader {
       )
     }
 
+    // Set the output variables for use by other actions
+    core.setOutput("tag_name", ghRelease.tag_name)
+
     const resolvedAssets: DownloadMetaData[] = this.resolveAssets(
       ghRelease,
       downloadSettings
