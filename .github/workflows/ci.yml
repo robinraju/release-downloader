@@ -51,9 +51,6 @@ jobs:
       shell: bash
       run: ls -lrth test-downloads
 
-    - name: Read output variable set by previous step
-      run: echo ${{steps.download-public.outputs.tag_name}}
-
     - name: Test download from a private repo
       uses: ./
       id: download-private
@@ -70,5 +67,14 @@ jobs:
       shell: bash
       run: ls -lrth downloader-test
 
-    - name: Read output variable set by previous step
-      run: echo ${{steps.download-private.outputs.tag_name}}
+    - name: Read output variable set by previous steps
+      run: |
+        if [ -n ${{steps.download-public.outputs.tag_name}} ]; then
+          echo ${{steps.download-public.outputs.tag_name}}
+        else echo "Unable to read output variable from step download-public"; exit 1
+        fi
+
+        if [ -n ${{steps.download-private.outputs.tag_name}} ]; then
+          echo ${{steps.download-private.outputs.tag_name}}
+        else echo "Unable to read output variable from step download-private"; exit 1
+        fi
