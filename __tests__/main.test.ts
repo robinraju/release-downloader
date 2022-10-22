@@ -112,6 +112,22 @@ test("Download single file from public repo", async () => {
   expect(result.length).toBe(1)
 }, 10000)
 
+test("Fail loudly if given filename is not found in a release", async () => {
+  const downloadSettings: IReleaseDownloadSettings = {
+    sourceRepoPath: "robinraju/probable-potato",
+    isLatest: true,
+    tag: "",
+    fileName: "missing-file.txt",
+    tarBall: false,
+    zipBall: false,
+    outFilePath: outputFilePath
+  }
+  const result = downloader.download(downloadSettings)
+  await expect(result).rejects.toThrow(
+    "Asset with name missing-file.txt not found!"
+  )
+}, 10000)
+
 test("Download files with wildcard from public repo", async () => {
   const downloadSettings: IReleaseDownloadSettings = {
     sourceRepoPath: "robinraju/probable-potato",

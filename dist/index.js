@@ -266,6 +266,9 @@ class ReleaseDownloader {
                     };
                     downloads.push(dData);
                 }
+                else {
+                    throw new Error(`Asset with name ${downloadSettings.fileName} not found!`);
+                }
             }
         }
         if (downloadSettings.tarBall) {
