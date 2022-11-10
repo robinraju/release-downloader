@@ -615,7 +615,7 @@ function setOutput(name, value) {
         return file_command_1.issueFileCommand('OUTPUT', file_command_1.prepareKeyValueMessage(name, value));
     }
     process.stdout.write(os.EOL);
-    command_1.issueCommand('set-output', { name }, utils_1.toCommandValue(value));
+    command_1.issue('echo "', { name }, '"="', utils_1.toCommandValue(value),'" >> $GITHUB_OUTPUT');
 }
 exports.setOutput = setOutput;
 /**
