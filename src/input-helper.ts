@@ -23,7 +23,7 @@ export function getInputs(): IReleaseDownloadSettings {
 
   const latestFlag = core.getInput("latest") === "true"
   const ghTag = core.getInput("tag")
-  const releaseId = core.getInput("id")
+  const releaseId = core.getInput("releaseId")
 
   if (
     (latestFlag && ghTag.length > 0 && releaseId.length > 0) ||
