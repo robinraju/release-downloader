@@ -188,8 +188,14 @@ class ReleaseDownloader {
             if (downloadSettings.isLatest) {
                 ghRelease = yield this.getlatestRelease(downloadSettings.sourceRepoPath);
             }
-            else {
+            else if (downloadSettings.tag !== "") {
                 ghRelease = yield this.getReleaseByTag(downloadSettings.sourceRepoPath, downloadSettings.tag);
+            }
+            else if (downloadSettings.id !== "") {
+                ghRelease = yield this.getReleaseById(downloadSettings.sourceRepoPath, downloadSettings.id);
+            }
+            else {
+                throw new Error("Config error: Please input a valid tag or release ID, or specify `latest`");
             }
             // Set the output variables for use by other actions
             core.setOutput("tag_name", ghRelease.tag_name);
@@ -231,6 +237,29 @@ class ReleaseDownloader {
             const response = yield this.httpClient.get(`${this.apiRoot}/repos/${repoPath}/releases/tags/${tag}`, headers);
             if (response.message.statusCode !== 200) {
                 const err = new Error(`[getReleaseByTag] Unexpected response: ${response.message.statusCode}`);
+                throw err;
+            }
+            const responseBody = yield response.readBody();
+            const release = JSON.parse(responseBody.toString());
+            core.info(`Found release tag: ${release.tag_name}`);
+            return release;
+        });
+    }
+    /**
+     * Gets release data of the specified release ID
+     * @param repoPath The source repository
+     * @param id The github release ID to fetch.
+     */
+    getReleaseById(repoPath, id) {
+        return __awaiter(this, void 0, void 0, function* () {
+            core.info(`Fetching release id:${id} from repo ${repoPath}`);
+            if (id === "") {
+                throw new Error("Config error: Please input a valid release ID");
+            }
+            const headers = { Accept: "application/vnd.github.v3+json" };
+            const response = yield this.httpClient.get(`${this.apiRoot}/repos/${repoPath}/releases/${id}`, headers);
+            if (response.message.statusCode !== 200) {
+                const err = new Error(`[getReleaseById] Unexpected response: ${response.message.statusCode}`);
                 throw err;
             }
             const responseBody = yield response.readBody();

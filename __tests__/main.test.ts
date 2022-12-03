@@ -135,6 +135,23 @@ test("Fail loudly if given filename is not found in a release", async () => {
   )
 }, 10000)
 
+test("Fail loudly if release is not identified", async () => {
+  const downloadSettings: IReleaseDownloadSettings = {
+    sourceRepoPath: "robinraju/probable-potato",
+    isLatest: false,
+    tag: "",
+    id: "",
+    fileName: "missing-file.txt",
+    tarBall: false,
+    zipBall: false,
+    outFilePath: outputFilePath
+  }
+  const result = downloader.download(downloadSettings)
+  await expect(result).rejects.toThrow(
+    "Config error: Please input a valid tag or release ID, or specify `latest`"
+  )
+}, 10000)
+
 test("Download files with wildcard from public repo", async () => {
   const downloadSettings: IReleaseDownloadSettings = {
     sourceRepoPath: "robinraju/probable-potato",
