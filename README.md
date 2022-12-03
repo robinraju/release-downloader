@@ -23,6 +23,9 @@ A Github Action to download assets from github release. It can download specifie
     # Download assets from a specific tag/version
     tag: ""
     
+    # The release id to download files from 
+    releaseId: ""
+    
     # The name of the file to download.
     # Use this field only to specify filenames other than tarball or zipball, if any.
     # Supports wildcard pattern (eg: '*', '*.deb', '*.zip' etc..)
