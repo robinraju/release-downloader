@@ -27,6 +27,10 @@ beforeEach(() => {
     .get("/repos/robinraju/probable-potato/releases/latest")
     .reply(200, readFromFile("1-release-latest.json"))
 
+    nock("https://api.github.com")
+    .get("/repos/robinraju/probable-potato/releases/68092191")
+    .reply(200, readFromFile("1-release-latest.json"))
+
   nock("https://api.github.com", {
     reqheaders: {accept: "application/octet-stream"}
   })
@@ -89,6 +93,7 @@ test("Download all files from public repo", async () => {
     sourceRepoPath: "robinraju/probable-potato",
     isLatest: true,
     tag: "",
+    id: "",
     fileName: "*",
     tarBall: false,
     zipBall: false,
@@ -103,6 +108,7 @@ test("Download single file from public repo", async () => {
     sourceRepoPath: "robinraju/probable-potato",
     isLatest: true,
     tag: "",
+    id: "",
     fileName: "test-1.txt",
     tarBall: false,
     zipBall: false,
@@ -117,6 +123,7 @@ test("Fail loudly if given filename is not found in a release", async () => {
     sourceRepoPath: "robinraju/probable-potato",
     isLatest: true,
     tag: "",
+    id: "",
     fileName: "missing-file.txt",
     tarBall: false,
     zipBall: false,
@@ -133,6 +140,7 @@ test("Download files with wildcard from public repo", async () => {
     sourceRepoPath: "robinraju/probable-potato",
     isLatest: true,
     tag: "",
+    id: "",
     fileName: "test-*.txt",
     tarBall: false,
     zipBall: false,
@@ -147,6 +155,7 @@ test("Download single file with wildcard from public repo", async () => {
     sourceRepoPath: "robinraju/probable-potato",
     isLatest: true,
     tag: "",
+    id: "",
     fileName: "3-*.txt",
     tarBall: false,
     zipBall: false,
@@ -161,6 +170,7 @@ test("Download multiple pdf files with wildcard filename", async () => {
     sourceRepoPath: "robinraju/probable-potato",
     isLatest: true,
     tag: "",
+    id: "",
     fileName: "*.pdf",
     tarBall: false,
     zipBall: false,
@@ -175,6 +185,7 @@ test("Download a csv file with wildcard filename", async () => {
     sourceRepoPath: "robinraju/probable-potato",
     isLatest: true,
     tag: "",
+    id: "",
     fileName: "*.csv",
     tarBall: false,
     zipBall: false,
@@ -191,7 +202,23 @@ test("Download file from Github Enterprise server", async () => {
     sourceRepoPath: "my-enterprise/test-repo",
     isLatest: true,
     tag: "",
+    id: "",
     fileName: "test-1.txt",
+    tarBall: false,
+    zipBall: false,
+    outFilePath: outputFilePath
+  }
+  const result = await downloader.download(downloadSettings)
+  expect(result.length).toBe(1)
+}, 10000)
+
+test("Download file from release identified by ID", async () => {
+  const downloadSettings: IReleaseDownloadSettings = {
+    sourceRepoPath: "robinraju/probable-potato",
+    isLatest: false,
+    tag: "",
+    id: "68092191",
+    fileName: "test-2.txt",
     tarBall: false,
     zipBall: false,
     outFilePath: outputFilePath

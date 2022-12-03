@@ -15,6 +15,11 @@ export interface IReleaseDownloadSettings {
   tag: string
 
   /**
+   * The release id
+   */
+  id: string
+
+  /**
    * Name of the file to download
    */
   fileName: string
