@@ -5,6 +5,7 @@ interface GhAsset {
 
 export interface GithubRelease {
   name: string
+  id: number
   tag_name: String
   assets: GhAsset[]
   tarball_url: string

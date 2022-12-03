@@ -26,10 +26,19 @@ export class ReleaseDownloader {
 
     if (downloadSettings.isLatest) {
       ghRelease = await this.getlatestRelease(downloadSettings.sourceRepoPath)
-    } else {
+    } else if (downloadSettings.tag !== "") {
       ghRelease = await this.getReleaseByTag(
         downloadSettings.sourceRepoPath,
         downloadSettings.tag
+      )
+    } else if (downloadSettings.id !== "") {
+      ghRelease = await this.getReleaseById(
+        downloadSettings.sourceRepoPath,
+        downloadSettings.id
+      )
+    } else {
+      throw new Error(
+        "Config error: Please input a valid tag or release ID, or specify `latest`"
       )
     }
 
@@ -100,6 +109,42 @@ export class ReleaseDownloader {
     if (response.message.statusCode !== 200) {
       const err: Error = new Error(
         `[getReleaseByTag] Unexpected response: ${response.message.statusCode}`
+      )
+      throw err
+    }
+
+    const responseBody = await response.readBody()
+    const release: GithubRelease = JSON.parse(responseBody.toString())
+    core.info(`Found release tag: ${release.tag_name}`)
+
+    return release
+  }
+
+  /**
+   * Gets release data of the specified release ID
+   * @param repoPath The source repository
+   * @param id The github release ID to fetch.
+   */
+  private async getReleaseById(
+    repoPath: string,
+    id: string
+  ): Promise<GithubRelease> {
+    core.info(`Fetching release id:${id} from repo ${repoPath}`)
+
+    if (id === "") {
+      throw new Error("Config error: Please input a valid release ID")
+    }
+
+    const headers: IHeaders = {Accept: "application/vnd.github.v3+json"}
+
+    const response = await this.httpClient.get(
+      `${this.apiRoot}/repos/${repoPath}/releases/${id}`,
+      headers
+    )
+
+    if (response.message.statusCode !== 200) {
+      const err: Error = new Error(
+        `[getReleaseById] Unexpected response: ${response.message.statusCode}`
       )
       throw err
     }

@@ -23,16 +23,22 @@ export function getInputs(): IReleaseDownloadSettings {
 
   const latestFlag = core.getInput("latest") === "true"
   const ghTag = core.getInput("tag")
+  const releaseId = core.getInput("id")
 
-  if (latestFlag && ghTag.length > 0) {
+  if (
+    (latestFlag && ghTag.length > 0 && releaseId.length > 0) ||
+    (ghTag.length > 0 && releaseId.length > 0)
+  ) {
     throw new Error(
-      `Invalid inputs. latest=${latestFlag} and tag=${ghTag} can't coexist`
+      `Invalid inputs. latest=${latestFlag}, tag=${ghTag} and releaseId=${releaseId} can't coexist`
     )
   }
 
   downloadSettings.isLatest = latestFlag
 
   downloadSettings.tag = ghTag
+
+  downloadSettings.id = releaseId
 
   downloadSettings.fileName = core.getInput("fileName")
 

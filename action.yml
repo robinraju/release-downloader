@@ -11,7 +11,7 @@ inputs:
     default: "false"
     required: false
   tag:
-    description: "The github tag to download the release from"  
+    description: "The github tag to download the release from"
     default: ""
     required: false
   fileName:
@@ -25,7 +25,7 @@ inputs:
   zipBall:
     description: "Download zipball from assets"
     default: "false"
-    required: false    
+    required: false
   out-file-path:
     description: "Relative path under $GITHUB_WORKSPACE to place the downloaded files"
     default: "."
@@ -37,6 +37,10 @@ inputs:
   github-api-url:
     description: "The URL of the Github API, only use this input if you are using Github Enterprise"
     default: "https://api.github.com"
+    required: false
+  releaseId:
+    description: "The release id to download the file from"
+    default: ""
     required: false
 outputs:
   tag_name:
