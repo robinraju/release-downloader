@@ -121,7 +121,7 @@ export class ReleaseDownloader {
   }
 
   /**
-   * Gets release data of the specified tag
+   * Gets release data of the specified release ID
    * @param repoPath The source repository
    * @param id The github release ID to fetch.
    */

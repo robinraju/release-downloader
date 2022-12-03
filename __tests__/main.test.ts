@@ -27,7 +27,7 @@ beforeEach(() => {
     .get("/repos/robinraju/probable-potato/releases/latest")
     .reply(200, readFromFile("1-release-latest.json"))
 
-    nock("https://api.github.com")
+  nock("https://api.github.com")
     .get("/repos/robinraju/probable-potato/releases/68092191")
     .reply(200, readFromFile("1-release-latest.json"))
 
