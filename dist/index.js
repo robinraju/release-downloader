@@ -48,11 +48,13 @@ function getInputs() {
     downloadSettings.sourceRepoPath = repositoryPath;
     const latestFlag = core.getInput("latest") === "true";
     const ghTag = core.getInput("tag");
-    if (latestFlag && ghTag.length > 0) {
-        throw new Error(`Invalid inputs. latest=${latestFlag} and tag=${ghTag} can't coexist`);
+    const releaseId = core.getInput("id");
+    if (latestFlag && ghTag.length > 0 && releaseId.length > 0 || ghTag.length > 0 && releaseId.length > 0) {
+        throw new Error(`Invalid inputs. latest=${latestFlag}, tag=${ghTag} and releaseId=${releaseId} can't coexist`);
     }
     downloadSettings.isLatest = latestFlag;
     downloadSettings.tag = ghTag;
+    downloadSettings.id = releaseId;
     downloadSettings.fileName = core.getInput("fileName");
     downloadSettings.tarBall = core.getInput("tarBall") === "true";
     downloadSettings.zipBall = core.getInput("zipBall") === "true";
