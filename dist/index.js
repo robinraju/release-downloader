@@ -48,8 +48,9 @@ function getInputs() {
     downloadSettings.sourceRepoPath = repositoryPath;
     const latestFlag = core.getInput("latest") === "true";
     const ghTag = core.getInput("tag");
-    const releaseId = core.getInput("id");
-    if (latestFlag && ghTag.length > 0 && releaseId.length > 0 || ghTag.length > 0 && releaseId.length > 0) {
+    const releaseId = core.getInput("releaseId");
+    if ((latestFlag && ghTag.length > 0 && releaseId.length > 0) ||
+        (ghTag.length > 0 && releaseId.length > 0)) {
         throw new Error(`Invalid inputs. latest=${latestFlag}, tag=${ghTag} and releaseId=${releaseId} can't coexist`);
     }
     downloadSettings.isLatest = latestFlag;
