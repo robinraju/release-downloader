@@ -8,7 +8,7 @@ A Github Action to download assets from github release. It can download specifie
 
 ```yaml
 
-- uses: robinraju/release-downloader@v1.6
+- uses: robinraju/release-downloader@v1.7
   with: 
     # The source repository path.
     # Expected format {owner}/{repo}
@@ -68,7 +68,7 @@ A Github Action to download assets from github release. It can download specifie
 
 ```yaml
 
-- uses: robinraju/release-downloader@v1.6
+- uses: robinraju/release-downloader@v1.7
   with:
     latest: true
     fileName: "foo.zip"
@@ -78,7 +78,7 @@ A Github Action to download assets from github release. It can download specifie
 
 ```yaml
 
-- uses: robinraju/release-downloader@v1.6
+- uses: robinraju/release-downloader@v1.7
   with:
     repository: "owner/repo"
     tag: "v1.0.0"
@@ -89,7 +89,7 @@ A Github Action to download assets from github release. It can download specifie
 
 ```yaml
 
-- uses: robinraju/release-downloader@v1.6
+- uses: robinraju/release-downloader@v1.7
   with:
     repository: "owner/repo"
     latest: true
@@ -101,7 +101,7 @@ A Github Action to download assets from github release. It can download specifie
 ### Download multiple assets
 
 ```yaml
-- uses: robinraju/release-downloader@v1.6
+- uses: robinraju/release-downloader@v1.7
   with:
     repository: "owner/repo"
     latest: true
@@ -113,7 +113,7 @@ A Github Action to download assets from github release. It can download specifie
 ### Download all assets if more than one files are available
 
 ```yaml
-- uses: robinraju/release-downloader@v1.6
+- uses: robinraju/release-downloader@v1.7
   with:
     repository: "owner/repo"
     latest: true
@@ -123,9 +123,18 @@ A Github Action to download assets from github release. It can download specifie
 ### Download assets using wildcard pattern
 
 ```yaml
-- uses: robinraju/release-downloader@v1.6
+- uses: robinraju/release-downloader@v1.7
   with:
     repository: "owner/repo"
     latest: true
     fileName: "*.deb"
+```
+
+### Download a release using its id
+
+```
+- uses: robinraju/release-downloader@v1.7
+  with:
+    releaseId: "123123"
+    fileName: "foo.zip"
 ```
