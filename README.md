@@ -132,7 +132,7 @@ A Github Action to download assets from github release. It can download specifie
 
 ### Download a release using its id
 
-```
+```yaml
 - uses: robinraju/release-downloader@v1.7
   with:
     releaseId: "123123"
