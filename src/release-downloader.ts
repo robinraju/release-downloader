@@ -56,7 +56,7 @@ export class ReleaseDownloader {
     core.setOutput("tag_name", ghRelease.tag_name)
     core.setOutput("downloaded_files", result)
     for (let i = 0; i < result.length; i++) {
-      core.setOutput(`downloaded_files.f${i}`, result[i])
+      core.setOutput(`downloaded_file_${i}`, result[i])
     }
 
     return result
