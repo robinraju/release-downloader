@@ -205,6 +205,9 @@ class ReleaseDownloader {
             // Set the output variables for use by other actions
             core.setOutput("tag_name", ghRelease.tag_name);
             core.setOutput("downloaded_files", result);
+            for (let i = 0; i < result.length; i++) {
+                core.setOutput(`downloaded_files[${i}]`, result[i]);
+            }
             return result;
         });
     }
