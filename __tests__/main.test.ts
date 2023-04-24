@@ -1,5 +1,6 @@
 import * as core from "@actions/core"
 import * as fs from "fs"
+import * as path from "path"
 import * as handlers from "typed-rest-client/Handlers"
 import * as io from "@actions/io"
 import * as thc from "typed-rest-client/HttpClient"
@@ -7,6 +8,7 @@ import * as thc from "typed-rest-client/HttpClient"
 import {IReleaseDownloadSettings} from "../src/download-settings"
 import {ReleaseDownloader} from "../src/release-downloader"
 import nock from "nock"
+import {extract} from "../src/unarchive"
 
 let downloader: ReleaseDownloader
 let httpClent: thc.HttpClient
@@ -64,6 +66,12 @@ beforeEach(() => {
   nock("https://api.github.com", {
     reqheaders: {accept: "application/octet-stream"}
   })
+    .get("/repos/robinraju/probable-potato/releases/assets/66946552")
+    .replyWithFile(200, __dirname + "/resource/assets/archive-example.zip")
+
+  nock("https://api.github.com", {
+    reqheaders: {accept: "application/octet-stream"}
+  })
     .get("/repos/robinraju/probable-potato/releases/assets/66946551")
     .replyWithFile(200, __dirname + "/resource/assets/file_example.csv")
 
@@ -100,7 +108,7 @@ test("Download all files from public repo", async () => {
     outFilePath: outputFilePath
   }
   const result = await downloader.download(downloadSettings)
-  expect(result.length).toBe(6)
+  expect(result.length).toBe(7)
 }, 10000)
 
 test("Download single file from public repo", async () => {
@@ -242,4 +250,29 @@ test("Download file from release identified by ID", async () => {
   }
   const result = await downloader.download(downloadSettings)
   expect(result.length).toBe(1)
+}, 10000)
+
+test("Download all archive files from public repo", async () => {
+  const extract_assats = true
+  const downloadSettings: IReleaseDownloadSettings = {
+    sourceRepoPath: "robinraju/probable-potato",
+    isLatest: true,
+    tag: "",
+    id: "",
+    fileName: "*.zip",
+    tarBall: false,
+    zipBall: false,
+    outFilePath: outputFilePath
+  }
+  const result = await downloader.download(downloadSettings)
+  if (extract_assats) {
+    for (const asset of result) {
+      await extract(asset, downloadSettings.outFilePath)
+    }
+  }
+
+  expect(result.length).toBe(1)
+  expect(
+    fs.existsSync(path.join(downloadSettings.outFilePath, "test-3.txt"))
+  ).toBe(true)
 }, 10000)

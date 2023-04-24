@@ -41,7 +41,12 @@ A Github Action to download assets from github release. It can download specifie
     # It will create the target directory automatically if not present
     # eg: out-file-path: "my-downloads" => It will create directory $GITHUB_WORKSPACE/my-downloads
     out-file-path: ""
-    
+
+    # A flagt to set if the downloaded assats are archives and should be extracted
+    # Checks all downloaded files if they end with zip, tar or tar.gz and extracts them, if true.
+    # Prints a warning if enabled but file is not an archive - but does not fail.
+    extract: false
+
     # Github access token to download files from private repositories
     # https://docs.github.com/en/actions/configuring-and-managing-workflows/creating-and-storing-encrypted-secrets
     # eg: token: ${{ secrets.MY_TOKEN }}
@@ -137,4 +142,14 @@ A Github Action to download assets from github release. It can download specifie
   with:
     releaseId: "123123"
     fileName: "foo.zip"
+```
+
+### Download and extracts archives
+
+```yaml
+- uses: robinraju/release-downloader@v1.7
+  with:
+    fileName: "foo.zip"
+    latest: true
+    extract: true
 ```
