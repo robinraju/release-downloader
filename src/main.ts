@@ -11,7 +11,6 @@ async function run(): Promise<void> {
     const downloadSettings = inputHelper.getInputs()
     const authToken = core.getInput("token")
     const githubApiUrl = core.getInput("github-api-url")
-    const extract_assats = Boolean(core.getInput("extract"))
 
     const credentialHandler = new handlers.BearerCredentialHandler(
       authToken,
@@ -24,11 +23,13 @@ async function run(): Promise<void> {
     const downloader = new ReleaseDownloader(httpClient, githubApiUrl)
 
     const res: string[] = await downloader.download(downloadSettings)
-    if (extract_assats) {
+
+    if (downloadSettings.extractAssets) {
       for (const asset of res) {
         await extract(asset, downloadSettings.outFilePath)
       }
     }
+
     core.info(`Done: ${res}`)
   } catch (error) {
     if (error instanceof Error) {

@@ -42,7 +42,7 @@ A Github Action to download assets from github release. It can download specifie
     # eg: out-file-path: "my-downloads" => It will create directory $GITHUB_WORKSPACE/my-downloads
     out-file-path: ""
 
-    # A flagt to set if the downloaded assats are archives and should be extracted
+    # A flag to set if the downloaded assets are archives and should be extracted
     # Checks all downloaded files if they end with zip, tar or tar.gz and extracts them, if true.
     # Prints a warning if enabled but file is not an archive - but does not fail.
     extract: false

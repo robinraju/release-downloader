@@ -38,4 +38,9 @@ export interface IReleaseDownloadSettings {
    * Target path to download the file
    */
   outFilePath: string
+
+  /**
+   * Target path to download the file
+   */
+  extractAssets: boolean
 }

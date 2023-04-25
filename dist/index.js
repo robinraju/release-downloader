@@ -59,6 +59,7 @@ function getInputs() {
     downloadSettings.fileName = core.getInput("fileName");
     downloadSettings.tarBall = core.getInput("tarBall") === "true";
     downloadSettings.zipBall = core.getInput("zipBall") === "true";
+    downloadSettings.extractAssets = core.getInput("extract") === "true";
     const outFilePath = core.getInput("out-file-path") || ".";
     downloadSettings.outFilePath = path.resolve(githubWorkspacePath, outFilePath);
     return downloadSettings;
@@ -118,14 +119,13 @@ function run() {
             const downloadSettings = inputHelper.getInputs();
             const authToken = core.getInput("token");
             const githubApiUrl = core.getInput("github-api-url");
-            const extract_assats = Boolean(core.getInput("extract"));
             const credentialHandler = new handlers.BearerCredentialHandler(authToken, false);
             const httpClient = new thc.HttpClient("gh-api-client", [
                 credentialHandler
             ]);
             const downloader = new release_downloader_1.ReleaseDownloader(httpClient, githubApiUrl);
             const res = yield downloader.download(downloadSettings);
-            if (extract_assats) {
+            if (downloadSettings.extractAssets) {
                 for (const asset of res) {
                     yield (0, unarchive_1.extract)(asset, downloadSettings.outFilePath);
                 }
