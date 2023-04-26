@@ -1,5 +1,6 @@
 import * as core from "@actions/core"
 import * as fs from "fs"
+import * as path from "path"
 import * as handlers from "typed-rest-client/Handlers"
 import * as io from "@actions/io"
 import * as thc from "typed-rest-client/HttpClient"
@@ -7,6 +8,7 @@ import * as thc from "typed-rest-client/HttpClient"
 import {IReleaseDownloadSettings} from "../src/download-settings"
 import {ReleaseDownloader} from "../src/release-downloader"
 import nock from "nock"
+import {extract} from "../src/unarchive"
 
 let downloader: ReleaseDownloader
 let httpClent: thc.HttpClient
@@ -64,6 +66,12 @@ beforeEach(() => {
   nock("https://api.github.com", {
     reqheaders: {accept: "application/octet-stream"}
   })
+    .get("/repos/robinraju/probable-potato/releases/assets/66946552")
+    .replyWithFile(200, __dirname + "/resource/assets/archive-example.zip")
+
+  nock("https://api.github.com", {
+    reqheaders: {accept: "application/octet-stream"}
+  })
     .get("/repos/robinraju/probable-potato/releases/assets/66946551")
     .replyWithFile(200, __dirname + "/resource/assets/file_example.csv")
 
@@ -97,10 +105,11 @@ test("Download all files from public repo", async () => {
     fileName: "*",
     tarBall: false,
     zipBall: false,
+    extractAssets: false,
     outFilePath: outputFilePath
   }
   const result = await downloader.download(downloadSettings)
-  expect(result.length).toBe(6)
+  expect(result.length).toBe(7)
 }, 10000)
 
 test("Download single file from public repo", async () => {
@@ -112,6 +121,7 @@ test("Download single file from public repo", async () => {
     fileName: "test-1.txt",
     tarBall: false,
     zipBall: false,
+    extractAssets: false,
     outFilePath: outputFilePath
   }
   const result = await downloader.download(downloadSettings)
@@ -127,6 +137,7 @@ test("Fail loudly if given filename is not found in a release", async () => {
     fileName: "missing-file.txt",
     tarBall: false,
     zipBall: false,
+    extractAssets: false,
     outFilePath: outputFilePath
   }
   const result = downloader.download(downloadSettings)
@@ -144,6 +155,7 @@ test("Fail loudly if release is not identified", async () => {
     fileName: "missing-file.txt",
     tarBall: false,
     zipBall: false,
+    extractAssets: false,
     outFilePath: outputFilePath
   }
   const result = downloader.download(downloadSettings)
@@ -161,6 +173,7 @@ test("Download files with wildcard from public repo", async () => {
     fileName: "test-*.txt",
     tarBall: false,
     zipBall: false,
+    extractAssets: false,
     outFilePath: outputFilePath
   }
   const result = await downloader.download(downloadSettings)
@@ -176,6 +189,7 @@ test("Download single file with wildcard from public repo", async () => {
     fileName: "3-*.txt",
     tarBall: false,
     zipBall: false,
+    extractAssets: false,
     outFilePath: outputFilePath
   }
   const result = await downloader.download(downloadSettings)
@@ -191,6 +205,7 @@ test("Download multiple pdf files with wildcard filename", async () => {
     fileName: "*.pdf",
     tarBall: false,
     zipBall: false,
+    extractAssets: false,
     outFilePath: outputFilePath
   }
   const result = await downloader.download(downloadSettings)
@@ -206,6 +221,7 @@ test("Download a csv file with wildcard filename", async () => {
     fileName: "*.csv",
     tarBall: false,
     zipBall: false,
+    extractAssets: false,
     outFilePath: outputFilePath
   }
   const result = await downloader.download(downloadSettings)
@@ -223,6 +239,7 @@ test("Download file from Github Enterprise server", async () => {
     fileName: "test-1.txt",
     tarBall: false,
     zipBall: false,
+    extractAssets: false,
     outFilePath: outputFilePath
   }
   const result = await downloader.download(downloadSettings)
@@ -238,8 +255,34 @@ test("Download file from release identified by ID", async () => {
     fileName: "test-2.txt",
     tarBall: false,
     zipBall: false,
+    extractAssets: false,
     outFilePath: outputFilePath
   }
   const result = await downloader.download(downloadSettings)
   expect(result.length).toBe(1)
+}, 10000)
+
+test("Download all archive files from public repo", async () => {
+  const downloadSettings: IReleaseDownloadSettings = {
+    sourceRepoPath: "robinraju/probable-potato",
+    isLatest: true,
+    tag: "",
+    id: "",
+    fileName: "*.zip",
+    tarBall: false,
+    zipBall: false,
+    extractAssets: true,
+    outFilePath: outputFilePath
+  }
+  const result = await downloader.download(downloadSettings)
+  if (downloadSettings.extractAssets) {
+    for (const asset of result) {
+      await extract(asset, downloadSettings.outFilePath)
+    }
+  }
+
+  expect(result.length).toBe(1)
+  expect(
+    fs.existsSync(path.join(downloadSettings.outFilePath, "test-3.txt"))
+  ).toBe(true)
 }, 10000)
