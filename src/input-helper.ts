@@ -21,7 +21,7 @@ export function getInputs(): IReleaseDownloadSettings {
   }
   downloadSettings.sourceRepoPath = repositoryPath
 
-  const latestFlag = core.getInput("latest") === "true"
+  const latestFlag = core.getBooleanInput("latest")
   const ghTag = core.getInput("tag")
   const releaseId = core.getInput("releaseId")
 
@@ -42,11 +42,11 @@ export function getInputs(): IReleaseDownloadSettings {
 
   downloadSettings.fileName = core.getInput("fileName")
 
-  downloadSettings.tarBall = core.getInput("tarBall") === "true"
+  downloadSettings.tarBall = core.getBooleanInput("tarBall")
 
-  downloadSettings.zipBall = core.getInput("zipBall") === "true"
+  downloadSettings.zipBall = core.getBooleanInput("zipBall")
 
-  downloadSettings.extractAssets = core.getInput("extract") === "true"
+  downloadSettings.extractAssets = core.getBooleanInput("extract")
 
   const outFilePath = core.getInput("out-file-path") || "."
   downloadSettings.outFilePath = path.resolve(githubWorkspacePath, outFilePath)

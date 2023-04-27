@@ -60,6 +60,7 @@ jobs:
         fileName: "*"
         tarBall: true
         zipBall: true
+        extract: true
         token: ${{ secrets.RELEASE_DOWNLOADER_TEST_TOKEN }}
         out-file-path: "./downloader-test"
 
