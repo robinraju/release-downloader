@@ -46,7 +46,7 @@ function getInputs() {
         throw new Error(`Invalid repository '${repositoryPath}'. Expected format {owner}/{repo}.`);
     }
     downloadSettings.sourceRepoPath = repositoryPath;
-    const latestFlag = core.getInput("latest") === "true";
+    const latestFlag = core.getBooleanInput("latest");
     const ghTag = core.getInput("tag");
     const releaseId = core.getInput("releaseId");
     if ((latestFlag && ghTag.length > 0 && releaseId.length > 0) ||
@@ -57,9 +57,9 @@ function getInputs() {
     downloadSettings.tag = ghTag;
     downloadSettings.id = releaseId;
     downloadSettings.fileName = core.getInput("fileName");
-    downloadSettings.tarBall = core.getInput("tarBall") === "true";
-    downloadSettings.zipBall = core.getInput("zipBall") === "true";
-    downloadSettings.extractAssets = core.getInput("extract") === "true";
+    downloadSettings.tarBall = core.getBooleanInput("tarBall");
+    downloadSettings.zipBall = core.getBooleanInput("zipBall");
+    downloadSettings.extractAssets = core.getBooleanInput("extract");
     const outFilePath = core.getInput("out-file-path") || ".";
     downloadSettings.outFilePath = path.resolve(githubWorkspacePath, outFilePath);
     return downloadSettings;
