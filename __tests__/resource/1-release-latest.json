@@ -103,6 +103,21 @@
             "created_at": "2022-05-29T12:08:23Z",
             "updated_at": "2022-05-29T12:08:23Z",
             "browser_download_url": "https://github.com/robinraju/probable-potato/releases/download/1.0.1/file_example.csv"
+        },
+        {
+            "url": "https://api.github.com/repos/robinraju/probable-potato/releases/assets/66946552",
+            "id": 66946552,
+            "node_id": "RA_kwDOHahpL84D_YXa",
+            "name": "archive-example.zip",
+            "label": null,
+            "uploader": {},
+            "content_type": "application/zip",
+            "state": "uploaded",
+            "size": 7253,
+            "download_count": 56,
+            "created_at": "2022-05-29T12:08:23Z",
+            "updated_at": "2022-05-29T12:08:23Z",
+            "browser_download_url": "https://github.com/robinraju/probable-potato/releases/download/1.0.1/archive-example.zip"
         }
     ],
     "tarball_url": "https://api.github.com/repos/robinraju/probable-potato/tarball/1.0.1",

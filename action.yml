@@ -30,6 +30,10 @@ inputs:
     description: "Relative path under $GITHUB_WORKSPACE to place the downloaded files"
     default: "."
     required: true
+  extract:
+    description: "If the downladed assets should be extracted to `out-file-path`. Supports tar, tar.gz and zip"
+    default: "false"
+    required: false
   token:
     description: "Github token to access private repos"
     default: ${{ github.token }}

@@ -4,6 +4,7 @@ import * as inputHelper from "./input-helper"
 import * as thc from "typed-rest-client/HttpClient"
 
 import {ReleaseDownloader} from "./release-downloader"
+import {extract} from "./unarchive"
 
 async function run(): Promise<void> {
   try {
@@ -22,6 +23,13 @@ async function run(): Promise<void> {
     const downloader = new ReleaseDownloader(httpClient, githubApiUrl)
 
     const res: string[] = await downloader.download(downloadSettings)
+
+    if (downloadSettings.extractAssets) {
+      for (const asset of res) {
+        await extract(asset, downloadSettings.outFilePath)
+      }
+    }
+
     core.info(`Done: ${res}`)
   } catch (error) {
     if (error instanceof Error) {
