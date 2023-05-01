@@ -45,6 +45,10 @@ inputs:
 outputs:
   tag_name:
     description: "The github tag used to download the release"
+  downloaded_files:
+    description: |
+      The array of downloaded files, useful in used wildcast '*' to download multiple files. 
+      usage: ${{ fromJson(steps.<step-id>.outputs.downloaded_files)[0] }}
 
 runs:
   using: "node16"
