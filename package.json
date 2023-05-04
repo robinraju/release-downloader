@@ -46,7 +46,7 @@
     "@types/unzipper": "^0.10.5",
     "jest-circus": "^29.5.0",
     "js-yaml": "^4.1.0",
-    "nock": "^13.3.0",
+    "nock": "^13.3.1",
     "prettier": "2.8.8",
     "ts-jest": "^29.1.0",
     "typescript": "^5.0.4"
