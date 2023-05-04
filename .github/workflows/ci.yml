@@ -80,3 +80,6 @@ jobs:
           echo ${{steps.download-private.outputs.tag_name}}
         else echo "Unable to read output variable from step download-private"; exit 1
         fi
+
+        echo "Downloaded files:"
+        echo ${{steps.download-public.outputs.downloaded_files}}

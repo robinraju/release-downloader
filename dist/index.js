@@ -207,10 +207,12 @@ class ReleaseDownloader {
             else {
                 throw new Error("Config error: Please input a valid tag or release ID, or specify `latest`");
             }
+            const resolvedAssets = this.resolveAssets(ghRelease, downloadSettings);
+            const result = yield this.downloadReleaseAssets(resolvedAssets, downloadSettings.outFilePath);
             // Set the output variables for use by other actions
             core.setOutput("tag_name", ghRelease.tag_name);
-            const resolvedAssets = this.resolveAssets(ghRelease, downloadSettings);
-            return yield this.downloadReleaseAssets(resolvedAssets, downloadSettings.outFilePath);
+            core.setOutput("downloaded_files", result);
+            return result;
         });
     }
     /**
