@@ -67,6 +67,12 @@ A Github Action to download assets from github release. It can download specifie
 > ${{steps.<step-id>.outputs.tag_name}}
 > ```
 
+- `downloaded_files` it outputs an array of downloaded files
+
+> It can be used as follows
+>
+> `${{ fromJson(steps.<step-id>.outputs.downloaded_files)[0] }}`
+
 ## Scenarios
 
 ### Download asset from the latest release in the current repository
