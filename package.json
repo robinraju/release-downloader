@@ -29,7 +29,7 @@
   "dependencies": {
     "@actions/core": "^1.10.0",
     "@actions/io": "^1.1.3",
-    "tar": "^6.1.13",
+    "tar": "^6.1.14",
     "typed-rest-client": "^1.8.9",
     "unzipper": "^0.10.11"
   },
