@@ -31,7 +31,7 @@ inputs:
     default: "."
     required: true
   extract:
-    description: "If the downladed assets should be extracted to `out-file-path`. Supports tar, tar.gz and zip"
+    description: "If the downloaded assets should be extracted to `out-file-path`. Supports tar, tar.gz and zip"
     default: "false"
     required: false
   token:
