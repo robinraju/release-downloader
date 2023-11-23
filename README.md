@@ -1,6 +1,6 @@
 ## Github Release Downloader
 
-![CI](https://github.com/robinraju/release-downloader/workflows/CI/badge.svg)
+[![Build and Test](https://github.com/robinraju/release-downloader/actions/workflows/ci.yml/badge.svg)](https://github.com/robinraju/release-downloader/actions/workflows/ci.yml)
 
 A Github Action to download assets from github release. It can download specified files from both private and public repositories.
 
