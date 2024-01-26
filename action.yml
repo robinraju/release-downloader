@@ -53,7 +53,7 @@ outputs:
     description: "The array of downloaded files, useful when using wildcard '*' to download multiple files."      
 
 runs:
-  using: "node16"
+  using: "node20"
   main: "dist/index.js"
 branding:
   icon: "download"
