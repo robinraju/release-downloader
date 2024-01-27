@@ -33,6 +33,10 @@ beforeEach(() => {
     .get("/repos/robinraju/probable-potato/releases/68092191")
     .reply(200, readFromFile("1-release-latest.json"))
 
+  nock("https://api.github.com")
+    .get("/repos/robinraju/foo-app/releases/tags/1.0.0")
+    .reply(200, readFromFile("3-empty-assets.json"))
+
   nock("https://api.github.com", {
     reqheaders: {accept: "application/octet-stream"}
   })
@@ -285,4 +289,22 @@ test("Download all archive files from public repo", async () => {
   expect(
     fs.existsSync(path.join(downloadSettings.outFilePath, "test-3.txt"))
   ).toBe(true)
+}, 10000)
+
+test("Fail when a release with no assets are obtained", async () => {
+  const downloadSettings: IReleaseDownloadSettings = {
+    sourceRepoPath: "robinraju/foo-app",
+    isLatest: false,
+    tag: "1.0.0",
+    id: "",
+    fileName: "installer.zip",
+    tarBall: false,
+    zipBall: false,
+    extractAssets: false,
+    outFilePath: outputFilePath
+  }
+  const result = downloader.download(downloadSettings)
+  await expect(result).rejects.toThrow(
+    "No assets found in release Foo app - v1.0.0"
+  )
 }, 10000)

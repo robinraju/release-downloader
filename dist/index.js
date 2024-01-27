@@ -313,6 +313,9 @@ class ReleaseDownloader {
                 }
             }
         }
+        else {
+            throw new Error(`No assets found in release ${ghRelease.name}`);
+        }
         if (downloadSettings.tarBall) {
             const repoName = downloadSettings.sourceRepoPath.split("/")[1];
             downloads.push({
