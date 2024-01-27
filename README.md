@@ -58,7 +58,7 @@ A Github Action to download assets from github release. It can download specifie
     github-api-url: ""
 ```
 
-#### Outputs variables
+#### Output variables
 
 - `tag_name` it outputs the tag used to download a release.
 
@@ -66,6 +66,12 @@ A Github Action to download assets from github release. It can download specifie
 > ```
 > ${{steps.<step-id>.outputs.tag_name}}
 > ```
+
+- `release_name` it outputs the name/title of the release
+> It can ce used as follows
+> ```
+> ${{steps.<step-id>.outputs.release_name}}
+>```
 
 - `downloaded_files` it outputs an array of downloaded files
 
