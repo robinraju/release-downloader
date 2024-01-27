@@ -8,7 +8,7 @@ A Github Action to download assets from github release. It can download specifie
 
 ```yaml
 
-- uses: robinraju/release-downloader@v1.8
+- uses: robinraju/release-downloader@v1.9
   with: 
     # The source repository path.
     # Expected format {owner}/{repo}
@@ -89,7 +89,7 @@ A Github Action to download assets from github release. It can download specifie
 
 ```yaml
 
-- uses: robinraju/release-downloader@v1.8
+- uses: robinraju/release-downloader@v1.9
   with:
     latest: true
     fileName: "foo.zip"
@@ -99,7 +99,7 @@ A Github Action to download assets from github release. It can download specifie
 
 ```yaml
 
-- uses: robinraju/release-downloader@v1.8
+- uses: robinraju/release-downloader@v1.9
   with:
     repository: "owner/repo"
     tag: "v1.0.0"
@@ -110,7 +110,7 @@ A Github Action to download assets from github release. It can download specifie
 
 ```yaml
 
-- uses: robinraju/release-downloader@v1.8
+- uses: robinraju/release-downloader@v1.9
   with:
     repository: "owner/repo"
     latest: true
@@ -122,7 +122,7 @@ A Github Action to download assets from github release. It can download specifie
 ### Download multiple assets
 
 ```yaml
-- uses: robinraju/release-downloader@v1.8
+- uses: robinraju/release-downloader@v1.9
   with:
     repository: "owner/repo"
     latest: true
@@ -134,7 +134,7 @@ A Github Action to download assets from github release. It can download specifie
 ### Download all assets if more than one files are available
 
 ```yaml
-- uses: robinraju/release-downloader@v1.8
+- uses: robinraju/release-downloader@v1.9
   with:
     repository: "owner/repo"
     latest: true
@@ -144,7 +144,7 @@ A Github Action to download assets from github release. It can download specifie
 ### Download assets using wildcard pattern
 
 ```yaml
-- uses: robinraju/release-downloader@v1.8
+- uses: robinraju/release-downloader@v1.9
   with:
     repository: "owner/repo"
     latest: true
@@ -154,7 +154,7 @@ A Github Action to download assets from github release. It can download specifie
 ### Download a release using its id
 
 ```yaml
-- uses: robinraju/release-downloader@v1.8
+- uses: robinraju/release-downloader@v1.9
   with:
     releaseId: "123123"
     fileName: "foo.zip"
@@ -163,7 +163,7 @@ A Github Action to download assets from github release. It can download specifie
 ### Download and extracts archives
 
 ```yaml
-- uses: robinraju/release-downloader@v1.8
+- uses: robinraju/release-downloader@v1.9
   with:
     fileName: "foo.zip"
     latest: true
@@ -173,7 +173,7 @@ A Github Action to download assets from github release. It can download specifie
 ### Download latest prerelease
 
 ```yaml
-- uses: robinraju/release-downloader@v1.8
+- uses: robinraju/release-downloader@v1.9
   with:
     repository: "owner/repo"
     fileName: "foo.zip"
