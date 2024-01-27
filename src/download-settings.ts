@@ -10,6 +10,11 @@ export interface IReleaseDownloadSettings {
   isLatest: boolean
 
   /**
+   * A flag to enable downloading from prerelease
+   */
+  preRelease: boolean
+
+  /**
    * The release tag
    */
   tag: string

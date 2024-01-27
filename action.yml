@@ -10,6 +10,10 @@ inputs:
     description: "A flag to choose between latest release and remaining releases"
     default: "false"
     required: false
+  preRelease:
+    description: "A flag to download from prerelease. It should be combined with latest flag"
+    default: "false"
+    required: false
   tag:
     description: "The github tag to download the release from"
     default: ""

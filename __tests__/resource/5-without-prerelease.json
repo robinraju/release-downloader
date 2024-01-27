@@ -1,0 +1,134 @@
+[    
+    {
+      "url": "https://api.github.com/repos/foo/slick-pg/releases/24758023",
+      "assets_url": "https://api.github.com/repos/foo/slick-pg/releases/24758023/assets",
+      "upload_url": "https://uploads.github.com/repos/foo/slick-pg/releases/24758023/assets{?name,label}",
+      "html_url": "https://github.com/foo/slick-pg/releases/tag/v0.19.0",
+      "id": 24758023,
+      "author": null,
+      "node_id": "MDc6UmVsZWFzZTI0NzU4MDIz",
+      "tag_name": "v0.19.0",
+      "target_commitish": "master",
+      "name": "v0.19.0",
+      "draft": false,
+      "prerelease": false,
+      "created_at": "2020-03-23T03:01:51Z",
+      "published_at": "2020-03-23T03:10:23Z",
+      "assets": [
+  
+      ],
+      "tarball_url": "https://api.github.com/repos/foo/slick-pg/tarball/v0.19.0",
+      "zipball_url": "https://api.github.com/repos/foo/slick-pg/zipball/v0.19.0",
+      "body": "1) add geography support\r\n2) fix #473\r\n3) fix #475 "
+    },
+    {
+      "url": "https://api.github.com/repos/foo/slick-pg/releases/21826353",
+      "assets_url": "https://api.github.com/repos/foo/slick-pg/releases/21826353/assets",
+      "upload_url": "https://uploads.github.com/repos/foo/slick-pg/releases/21826353/assets{?name,label}",
+      "html_url": "https://github.com/foo/slick-pg/releases/tag/v0.18.1",
+      "id": 21826353,
+      "author": null,
+      "node_id": "MDc6UmVsZWFzZTIxODI2MzUz",
+      "tag_name": "v0.18.1",
+      "target_commitish": "master",
+      "name": "v0.18.1",
+      "draft": false,
+      "prerelease": false,
+      "created_at": "2019-11-28T09:56:03Z",
+      "published_at": "2019-11-28T10:28:10Z",
+      "assets": [
+  
+      ],
+      "tarball_url": "https://api.github.com/repos/foo/slick-pg/tarball/v0.18.1",
+      "zipball_url": "https://api.github.com/repos/foo/slick-pg/zipball/v0.18.1",
+      "body": "1) upgrade circe to v0.12.3 **(p.s. but for version of scala 2.11, roll back to v0.11.2 instead, since circe dropped support for scala 2.11)**"
+    },
+    {
+      "url": "https://api.github.com/repos/foo/slick-pg/releases/18253493",
+      "assets_url": "https://api.github.com/repos/foo/slick-pg/releases/18253493/assets",
+      "upload_url": "https://uploads.github.com/repos/foo/slick-pg/releases/18253493/assets{?name,label}",
+      "html_url": "https://github.com/foo/slick-pg/releases/tag/v0.18.0",
+      "id": 18253493,
+      "author": null,
+      "node_id": "MDc6UmVsZWFzZTE4MjUzNDkz",
+      "tag_name": "v0.18.0",
+      "target_commitish": "master",
+      "name": "v0.18.0",
+      "draft": false,
+      "prerelease": false,
+      "created_at": "2019-06-27T01:16:48Z",
+      "published_at": "2019-06-27T01:18:44Z",
+      "assets": [
+  
+      ],
+      "tarball_url": "https://api.github.com/repos/foo/slick-pg/tarball/v0.18.0",
+      "zipball_url": "https://api.github.com/repos/foo/slick-pg/zipball/v0.18.0",
+      "body": "1) support scala 2.13, with related dependencies upgraded and some refactorings."
+    },
+    {
+      "url": "https://api.github.com/repos/foo/slick-pg/releases/17452628",
+      "assets_url": "https://api.github.com/repos/foo/slick-pg/releases/17452628/assets",
+      "upload_url": "https://uploads.github.com/repos/foo/slick-pg/releases/17452628/assets{?name,label}",
+      "html_url": "https://github.com/foo/slick-pg/releases/tag/v0.17.3",
+      "id": 17452628,
+      "author": null,
+      "node_id": "MDc6UmVsZWFzZTE3NDUyNjI4",
+      "tag_name": "v0.17.3",
+      "target_commitish": "master",
+      "name": "v0.17.3",
+      "draft": false,
+      "prerelease": false,
+      "created_at": "2019-05-20T03:54:21Z",
+      "published_at": "2019-05-20T03:57:13Z",
+      "assets": [
+  
+      ],
+      "tarball_url": "https://api.github.com/repos/foo/slick-pg/tarball/v0.17.3",
+      "zipball_url": "https://api.github.com/repos/foo/slick-pg/zipball/v0.17.3",
+      "body": "1) fix #449"
+    },
+    {
+      "url": "https://api.github.com/repos/foo/slick-pg/releases/15424160",
+      "assets_url": "https://api.github.com/repos/foo/slick-pg/releases/15424160/assets",
+      "upload_url": "https://uploads.github.com/repos/foo/slick-pg/releases/15424160/assets{?name,label}",
+      "html_url": "https://github.com/foo/slick-pg/releases/tag/v0.17.2",
+      "id": 15424160,
+      "author": null,
+      "node_id": "MDc6UmVsZWFzZTE1NDI0MTYw",
+      "tag_name": "v0.17.2",
+      "target_commitish": "master",
+      "name": "v0.17.2",
+      "draft": false,
+      "prerelease": false,
+      "created_at": "2019-02-07T14:17:52Z",
+      "published_at": "2019-02-07T14:21:56Z",
+      "assets": [
+  
+      ],
+      "tarball_url": "https://api.github.com/repos/foo/slick-pg/tarball/v0.17.2",
+      "zipball_url": "https://api.github.com/repos/foo/slick-pg/zipball/v0.17.2",
+      "body": "1) update to slick 3.3.0\r\n2) update to play-json 2.7"
+    },
+    {
+      "url": "https://api.github.com/repos/foo/slick-pg/releases/15231483",
+      "assets_url": "https://api.github.com/repos/foo/slick-pg/releases/15231483/assets",
+      "upload_url": "https://uploads.github.com/repos/foo/slick-pg/releases/15231483/assets{?name,label}",
+      "html_url": "https://github.com/foo/slick-pg/releases/tag/v0.17.1",
+      "id": 15231483,
+      "author": null,
+      "node_id": "MDc6UmVsZWFzZTE1MjMxNDgz",
+      "tag_name": "v0.17.1",
+      "target_commitish": "master",
+      "name": "v0.17.1",
+      "draft": false,
+      "prerelease": false,
+      "created_at": "2019-01-29T04:08:45Z",
+      "published_at": "2019-01-29T05:24:04Z",
+      "assets": [
+  
+      ],
+      "tarball_url": "https://api.github.com/repos/foo/slick-pg/tarball/v0.17.1",
+      "zipball_url": "https://api.github.com/repos/foo/slick-pg/zipball/v0.17.1",
+      "body": "1. Add support for locationtech's JTS library #442\r\n2. Provide a custom way for #441\r\n3. Upgrade some third party dependencies"
+    }
+  ]
