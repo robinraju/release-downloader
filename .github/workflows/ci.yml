@@ -51,6 +51,21 @@ jobs:
       shell: bash
       run: ls -lrth test-downloads
 
+    - name: Test download latest pre-release
+      uses: ./
+      with: 
+        repository: "robinraju/probable-potato"
+        latest: true
+        preRelease: true
+        fileName: "prerelease.txt"
+        tarBall: true
+        zipBall: true
+        out-file-path: "./prerelease-downloads"
+
+    - name: List downloaded files
+      shell: bash
+      run: ls -lrth prerelease-downloads
+
     - name: Test download from a private repo
       uses: ./
       id: download-private

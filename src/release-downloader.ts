@@ -109,6 +109,7 @@ export class ReleaseDownloader {
 
       if (latestPreRelease) {
         release = latestPreRelease
+        core.info(`Found latest pre-release version: ${release.tag_name}`)
       } else {
         throw new Error("No prereleases found!")
       }
