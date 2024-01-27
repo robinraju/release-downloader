@@ -25,7 +25,10 @@ export class ReleaseDownloader {
     let ghRelease: GithubRelease
 
     if (downloadSettings.isLatest) {
-      ghRelease = await this.getlatestRelease(downloadSettings.sourceRepoPath)
+      ghRelease = await this.getlatestRelease(
+        downloadSettings.sourceRepoPath,
+        downloadSettings.preRelease
+      )
     } else if (downloadSettings.tag !== "") {
       ghRelease = await this.getReleaseByTag(
         downloadSettings.sourceRepoPath,
@@ -64,15 +67,26 @@ export class ReleaseDownloader {
    * Gets the latest release metadata from github api
    * @param repoPath The source repository path. {owner}/{repo}
    */
-  private async getlatestRelease(repoPath: string): Promise<GithubRelease> {
+  private async getlatestRelease(
+    repoPath: string,
+    preRelease: boolean
+  ): Promise<GithubRelease> {
     core.info(`Fetching latest release for repo ${repoPath}`)
 
     const headers: IHeaders = {Accept: "application/vnd.github.v3+json"}
+    let response: IHttpClientResponse
 
-    const response = await this.httpClient.get(
-      `${this.apiRoot}/repos/${repoPath}/releases/latest`,
-      headers
-    )
+    if (!preRelease) {
+      response = await this.httpClient.get(
+        `${this.apiRoot}/repos/${repoPath}/releases/latest`,
+        headers
+      )
+    } else {
+      response = await this.httpClient.get(
+        `${this.apiRoot}/repos/${repoPath}/releases`,
+        headers
+      )
+    }
 
     if (response.message.statusCode !== 200) {
       const err: Error = new Error(
@@ -82,9 +96,24 @@ export class ReleaseDownloader {
     }
 
     const responseBody = await response.readBody()
-    const release: GithubRelease = JSON.parse(responseBody.toString())
 
-    core.info(`Found latest release version: ${release.tag_name}`)
+    let release: GithubRelease
+    if (!preRelease) {
+      release = JSON.parse(responseBody.toString())
+      core.info(`Found latest release version: ${release.tag_name}`)
+    } else {
+      const allReleases: GithubRelease[] = JSON.parse(responseBody.toString())
+      const latestPreRelease: GithubRelease | undefined = allReleases.find(
+        r => r.prerelease === true
+      )
+
+      if (latestPreRelease) {
+        release = latestPreRelease
+      } else {
+        throw new Error("No prereleases found!")
+      }
+    }
+
     return release
   }
 

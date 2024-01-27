@@ -33,36 +33,42 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.getInputs = void 0;
 const core = __importStar(__nccwpck_require__(2186));
 const path = __importStar(__nccwpck_require__(1017));
+function validateRepositoryPath(repositoryPath) {
+    const repoParts = repositoryPath.split("/");
+    if (repoParts.length !== 2 || !repoParts[0] || !repoParts[1]) {
+        throw new Error(`Invalid repository '${repositoryPath}'. Expected format {owner}/{repo}.`);
+    }
+}
+function validateReleaseVersion(latestFlag, ghTag, releaseId) {
+    if ((latestFlag && ghTag && releaseId) || (ghTag && releaseId)) {
+        throw new Error(`Invalid inputs. latest=${latestFlag}, tag=${ghTag}, and releaseId=${releaseId} can't coexist`);
+    }
+}
 function getInputs() {
-    const downloadSettings = {};
     let githubWorkspacePath = process.env["GITHUB_WORKSPACE"];
     if (!githubWorkspacePath) {
         throw new Error("$GITHUB_WORKSPACE not defined");
     }
     githubWorkspacePath = path.resolve(githubWorkspacePath);
     const repositoryPath = core.getInput("repository");
-    const repo = repositoryPath.split("/");
-    if (repo.length !== 2 || !repo[0] || !repo[1]) {
-        throw new Error(`Invalid repository '${repositoryPath}'. Expected format {owner}/{repo}.`);
-    }
-    downloadSettings.sourceRepoPath = repositoryPath;
+    validateRepositoryPath(repositoryPath);
     const latestFlag = core.getBooleanInput("latest");
+    const preReleaseFlag = core.getBooleanInput("preRelease");
     const ghTag = core.getInput("tag");
     const releaseId = core.getInput("releaseId");
-    if ((latestFlag && ghTag.length > 0 && releaseId.length > 0) ||
-        (ghTag.length > 0 && releaseId.length > 0)) {
-        throw new Error(`Invalid inputs. latest=${latestFlag}, tag=${ghTag} and releaseId=${releaseId} can't coexist`);
-    }
-    downloadSettings.isLatest = latestFlag;
-    downloadSettings.tag = ghTag;
-    downloadSettings.id = releaseId;
-    downloadSettings.fileName = core.getInput("fileName");
-    downloadSettings.tarBall = core.getBooleanInput("tarBall");
-    downloadSettings.zipBall = core.getBooleanInput("zipBall");
-    downloadSettings.extractAssets = core.getBooleanInput("extract");
-    const outFilePath = core.getInput("out-file-path") || ".";
-    downloadSettings.outFilePath = path.resolve(githubWorkspacePath, outFilePath);
-    return downloadSettings;
+    validateReleaseVersion(latestFlag, ghTag, releaseId);
+    return {
+        sourceRepoPath: repositoryPath,
+        isLatest: latestFlag,
+        preRelease: preReleaseFlag,
+        tag: ghTag,
+        id: releaseId,
+        fileName: core.getInput("fileName"),
+        tarBall: core.getBooleanInput("tarBall"),
+        zipBall: core.getBooleanInput("zipBall"),
+        extractAssets: core.getBooleanInput("extract"),
+        outFilePath: path.resolve(githubWorkspacePath, core.getInput("out-file-path") || ".")
+    };
 }
 exports.getInputs = getInputs;
 
@@ -196,7 +202,7 @@ class ReleaseDownloader {
         return __awaiter(this, void 0, void 0, function* () {
             let ghRelease;
             if (downloadSettings.isLatest) {
-                ghRelease = yield this.getlatestRelease(downloadSettings.sourceRepoPath);
+                ghRelease = yield this.getlatestRelease(downloadSettings.sourceRepoPath, downloadSettings.preRelease);
             }
             else if (downloadSettings.tag !== "") {
                 ghRelease = yield this.getReleaseByTag(downloadSettings.sourceRepoPath, downloadSettings.tag);
@@ -220,18 +226,37 @@ class ReleaseDownloader {
      * Gets the latest release metadata from github api
      * @param repoPath The source repository path. {owner}/{repo}
      */
-    getlatestRelease(repoPath) {
+    getlatestRelease(repoPath, preRelease) {
         return __awaiter(this, void 0, void 0, function* () {
             core.info(`Fetching latest release for repo ${repoPath}`);
             const headers = { Accept: "application/vnd.github.v3+json" };
-            const response = yield this.httpClient.get(`${this.apiRoot}/repos/${repoPath}/releases/latest`, headers);
+            let response;
+            if (!preRelease) {
+                response = yield this.httpClient.get(`${this.apiRoot}/repos/${repoPath}/releases/latest`, headers);
+            }
+            else {
+                response = yield this.httpClient.get(`${this.apiRoot}/repos/${repoPath}/releases`, headers);
+            }
             if (response.message.statusCode !== 200) {
                 const err = new Error(`[getlatestRelease] Unexpected response: ${response.message.statusCode}`);
                 throw err;
             }
             const responseBody = yield response.readBody();
-            const release = JSON.parse(responseBody.toString());
-            core.info(`Found latest release version: ${release.tag_name}`);
+            let release;
+            if (!preRelease) {
+                release = JSON.parse(responseBody.toString());
+                core.info(`Found latest release version: ${release.tag_name}`);
+            }
+            else {
+                const allReleases = JSON.parse(responseBody.toString());
+                const latestPreRelease = allReleases.find(r => r.prerelease === true);
+                if (latestPreRelease) {
+                    release = latestPreRelease;
+                }
+                else {
+                    throw new Error("No prereleases found!");
+                }
+            }
             return release;
         });
     }
