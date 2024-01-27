@@ -203,6 +203,8 @@ export class ReleaseDownloader {
           )
         }
       }
+    } else {
+      throw new Error(`No assets found in release ${ghRelease.name}`)
     }
 
     if (downloadSettings.tarBall) {

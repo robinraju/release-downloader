@@ -1,0 +1,22 @@
+{
+    "url": "https://api.github.com/repos/robinraju/foo-app/releases/68092191",
+    "assets_url": "https://api.github.com/repos/robinraju/foo-app/releases/68092191/assets",
+    "upload_url": "https://uploads.github.com/repos/robinraju/foo-app/releases/68092191/assets{?name,label}",
+    "html_url": "https://github.com/robinraju/foo-app/releases/tag/1.0.1",
+    "id": 68092191,
+    "author": {},
+    "node_id": "RE_kwDOHahpL84EDwEf",
+    "tag_name": "1.0.0",
+    "target_commitish": "main",
+    "name": "Foo app - v1.0.0",
+    "draft": false,
+    "prerelease": false,
+    "created_at": "2022-05-29T12:03:47Z",
+    "published_at": "2022-05-29T12:04:42Z",
+    "assets": [
+        
+    ],
+    "tarball_url": "",
+    "zipball_url": "",
+    "body": ""
+}
