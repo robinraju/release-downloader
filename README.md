@@ -18,6 +18,10 @@ A Github Action to download assets from github release. It can download specifie
     # A flag to set the download target as latest release
     # The default value is 'false'
     latest: true
+
+    # A flag to download from prerelease. It should be combined with latest flag.
+    # The default value is 'false'
+    preRelease: true
     
     # The github tag. e.g: v1.0.1
     # Download assets from a specific tag/version
@@ -164,4 +168,15 @@ A Github Action to download assets from github release. It can download specifie
     fileName: "foo.zip"
     latest: true
     extract: true
+```
+
+### Download latest prerelease
+
+```yaml
+- uses: robinraju/release-downloader@v1.8
+  with:
+    repository: "owner/repo"
+    fileName: "foo.zip"
+    latest: true
+    preRelease: true
 ```
