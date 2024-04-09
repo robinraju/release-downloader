@@ -314,6 +314,12 @@ test("Download all archive files from public repo", async () => {
   expect(
     fs.existsSync(path.join(downloadSettings.outFilePath, "test-3.txt"))
   ).toBe(true)
+
+  const test4actual = path.join(downloadSettings.outFilePath, "test-4.txt")
+  expect(fs.existsSync(test4actual)).toBe(true)
+  expect(fs.readFileSync(test4actual, {encoding: "utf-8"}).toString()).toBe(
+    readFromFile("assets/archive-example-test-4.txt")
+  )
 }, 10000)
 
 test("Fail when a release with no assets are obtained", async () => {
