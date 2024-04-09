@@ -1,1 +1,2 @@
 dist/** -diff linguist-generated=true
+__tests__/resource/assets/archive-example-test-4.txt eol=lf
