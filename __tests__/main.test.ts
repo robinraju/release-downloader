@@ -1,4 +1,3 @@
-import * as core from "@actions/core"
 import * as fs from "fs"
 import * as path from "path"
 import * as handlers from "typed-rest-client/Handlers"
@@ -318,7 +317,7 @@ test("Download all archive files from public repo", async () => {
   const test4actual = path.join(downloadSettings.outFilePath, "test-4.txt")
   expect(fs.existsSync(test4actual)).toBe(true)
   expect(fs.readFileSync(test4actual, {encoding: "utf-8"}).toString()).toBe(
-    readFromFile("assets/archive-example-test-4.txt")
+    readFromFile("assets/archive-example-test-4.txt").toString()
   )
 }, 10000)
 
