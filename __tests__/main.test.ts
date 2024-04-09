@@ -1,4 +1,3 @@
-import * as core from "@actions/core"
 import * as fs from "fs"
 import * as path from "path"
 import * as handlers from "typed-rest-client/Handlers"
@@ -109,9 +108,15 @@ afterEach(async () => {
 })
 
 function readFromFile(fileName: string): string {
-  return fs.readFileSync(`${__dirname}/resource/${fileName}`, {
+  const fileContents = fs.readFileSync(`${__dirname}/resource/${fileName}`, {
     encoding: "utf-8"
   })
+  return normalizeLineEndings(fileContents)
+}
+
+function normalizeLineEndings(str: string): string {
+  // Normalize all line endings to LF (\n)
+  return str.replace(/\r\n/g, "\n")
 }
 
 test("Download all files from public repo", async () => {
@@ -315,11 +320,16 @@ test("Download all archive files from public repo", async () => {
     fs.existsSync(path.join(downloadSettings.outFilePath, "test-3.txt"))
   ).toBe(true)
 
-  const test4actual = path.join(downloadSettings.outFilePath, "test-4.txt")
-  expect(fs.existsSync(test4actual)).toBe(true)
-  expect(fs.readFileSync(test4actual, {encoding: "utf-8"}).toString()).toBe(
-    readFromFile("assets/archive-example-test-4.txt")
+  const extractedFilePath = path.join(
+    downloadSettings.outFilePath,
+    "test-4.txt"
   )
+  expect(fs.existsSync(extractedFilePath)).toBe(true)
+
+  const actualContent = fs.readFileSync(extractedFilePath, {encoding: "utf-8"})
+  const expectedContent = readFromFile("assets/archive-example-test-4.txt")
+
+  expect(normalizeLineEndings(actualContent)).toBe(expectedContent)
 }, 10000)
 
 test("Fail when a release with no assets are obtained", async () => {
