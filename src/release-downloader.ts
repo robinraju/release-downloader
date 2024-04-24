@@ -196,45 +196,47 @@ export class ReleaseDownloader {
   ): DownloadMetaData[] {
     const downloads: DownloadMetaData[] = []
 
-    if (ghRelease && ghRelease.assets.length > 0) {
-      if (downloadSettings.fileName.includes("*")) {
-        // Download all assets
-        for (const asset of ghRelease.assets) {
-          if (
-            !new RegExp(
-              `^${downloadSettings.fileName.replace(/\*/g, "(.)*")}$`,
-              ""
-            ).test(asset["name"])
-          ) {
-            continue
-          }
+    if (downloadSettings.fileName.length > 0) {
+      if (ghRelease && ghRelease.assets.length > 0) {
+        if (downloadSettings.fileName.includes("*")) {
+          // Download all assets
+          for (const asset of ghRelease.assets) {
+            if (
+              !new RegExp(
+                `^${downloadSettings.fileName.replace(/\*/g, "(.)*")}$`,
+                ""
+              ).test(asset["name"])
+            ) {
+              continue
+            }
 
-          const dData: DownloadMetaData = {
-            fileName: asset["name"],
-            url: asset["url"],
-            isTarBallOrZipBall: false
+            const dData: DownloadMetaData = {
+              fileName: asset["name"],
+              url: asset["url"],
+              isTarBallOrZipBall: false
+            }
+            downloads.push(dData)
           }
-          downloads.push(dData)
+        } else {
+          const asset = ghRelease.assets.find(
+            a => a.name === downloadSettings.fileName
+          )
+          if (asset) {
+            const dData: DownloadMetaData = {
+              fileName: asset["name"],
+              url: asset["url"],
+              isTarBallOrZipBall: false
+            }
+            downloads.push(dData)
+          } else {
+            throw new Error(
+              `Asset with name ${downloadSettings.fileName} not found!`
+            )
+          }
         }
       } else {
-        const asset = ghRelease.assets.find(
-          a => a.name === downloadSettings.fileName
-        )
-        if (asset) {
-          const dData: DownloadMetaData = {
-            fileName: asset["name"],
-            url: asset["url"],
-            isTarBallOrZipBall: false
-          }
-          downloads.push(dData)
-        } else {
-          throw new Error(
-            `Asset with name ${downloadSettings.fileName} not found!`
-          )
-        }
+        throw new Error(`No assets found in release ${ghRelease.name}`)
       }
-    } else {
-      throw new Error(`No assets found in release ${ghRelease.name}`)
     }
 
     if (downloadSettings.tarBall) {

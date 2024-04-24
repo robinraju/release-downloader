@@ -107,7 +107,7 @@ beforeEach(() => {
     .reply(200, readFromFile("6-tar-zip-ball-only-repo.json"))
 
   nock("https://api.github.com", {
-    reqheaders: {accept: "application/octet-stream"}
+    reqheaders: {accept: "*/*"}
   })
     .get("/repos/robinraju/tar-zip-ball-only-repo/tarball/1.0.0")
     .replyWithFile(
@@ -116,7 +116,7 @@ beforeEach(() => {
     )
 
   nock("https://api.github.com", {
-    reqheaders: {accept: "application/octet-stream"}
+    reqheaders: {accept: "*/*"}
   })
     .get("/repos/robinraju/tar-zip-ball-only-repo/zipball/1.0.0")
     .replyWithFile(
