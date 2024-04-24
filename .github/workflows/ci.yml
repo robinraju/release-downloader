@@ -1,11 +1,11 @@
-name: "Build and Test"
+name: 'Build and Test'
 on:
   # Trigger manually
   workflow_dispatch:
   pull_request:
   push:
     tags:
-      - "*"
+      - '*'
     branches:
       - main
 
@@ -18,96 +18,95 @@ jobs:
           - macos-latest
           - windows-latest
     runs-on: ${{ matrix.os }}
-    
+
     steps:
-    
-    - name: Checkout Repo
-      uses: actions/checkout@v4
+      - name: Checkout Repo
+        uses: actions/checkout@v4
 
-    - name: Setup node and cache dependencies
-      uses: actions/setup-node@v4
-      with:
-        node-version: 20
-        cache: 'npm'
+      - name: Setup node and cache dependencies
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
 
-    - name: Build and test 
-      shell: bash
-      run: |
-        npm ci
-        npm run all
-    
-    - name: Run action
-      uses: ./
-      id: download-public
-      with: 
-        repository: "robinraju/probable-potato"
-        tag: "1.0.1"
-        fileName: "potato.jpeg"
-        tarBall: true
-        zipBall: true
-        out-file-path: "./test-downloads"
-          
-    - name: List downloaded files
-      shell: bash
-      run: ls -lrth test-downloads
+      - name: Build and test
+        shell: bash
+        run: |
+          npm ci
+          npm run all
 
-    - name: Download tarBall & zipBall only
-      uses: ./
-      with: 
-        repository: "robinraju/probable-potato"
-        tag: "1.0.2"
-        tarBall: true
-        zipBall: true
-        out-file-path: "./public-download"
+      - name: Run action
+        uses: ./
+        id: download-public
+        with:
+          repository: 'robinraju/probable-potato'
+          tag: '1.0.1'
+          fileName: 'potato.jpeg'
+          tarBall: true
+          zipBall: true
+          out-file-path: './test-downloads'
 
-    - name: List downloaded files
-      shell: bash
-      run: ls -lrth public-download  
-        
-    - name: Test download latest pre-release
-      uses: ./
-      with: 
-        repository: "robinraju/probable-potato"
-        latest: true
-        preRelease: true
-        fileName: "prerelease.txt"
-        tarBall: true
-        zipBall: true
-        out-file-path: "./prerelease-downloads"
+      - name: List downloaded files
+        shell: bash
+        run: ls -lrth test-downloads
 
-    - name: List downloaded files
-      shell: bash
-      run: ls -lrth prerelease-downloads
+      - name: Download tarBall & zipBall only
+        uses: ./
+        with:
+          repository: 'robinraju/probable-potato'
+          tag: '1.0.2'
+          tarBall: true
+          zipBall: true
+          out-file-path: './public-download'
 
-    - name: Test download from a private repo
-      uses: ./
-      id: download-private
-      with:
-        repository: "robinraju/release-downloader-test"
-        latest: true
-        fileName: "*"
-        tarBall: true
-        zipBall: true
-        extract: true
-        token: ${{ secrets.RELEASE_DOWNLOADER_TEST_TOKEN }}
-        out-file-path: "./downloader-test"
+      - name: List downloaded files
+        shell: bash
+        run: ls -lrth public-download
 
-    - name: List downloaded files from private repo
-      shell: bash
-      run: ls -lrth downloader-test
+      - name: Test download latest pre-release
+        uses: ./
+        with:
+          repository: 'robinraju/probable-potato'
+          latest: true
+          preRelease: true
+          fileName: 'prerelease.txt'
+          tarBall: true
+          zipBall: true
+          out-file-path: './prerelease-downloads'
 
-    - name: Read output variable set by previous steps
-      shell: bash
-      run: |
-        if [ -n ${{steps.download-public.outputs.tag_name}} ]; then
-          echo ${{steps.download-public.outputs.tag_name}}
-        else echo "Unable to read output variable from step download-public"; exit 1
-        fi
+      - name: List downloaded files
+        shell: bash
+        run: ls -lrth prerelease-downloads
 
-        if [ -n ${{steps.download-private.outputs.tag_name}} ]; then
-          echo ${{steps.download-private.outputs.tag_name}}
-        else echo "Unable to read output variable from step download-private"; exit 1
-        fi
+      - name: Test download from a private repo
+        uses: ./
+        id: download-private
+        with:
+          repository: 'robinraju/release-downloader-test'
+          latest: true
+          fileName: '*'
+          tarBall: true
+          zipBall: true
+          extract: true
+          token: ${{ secrets.RELEASE_DOWNLOADER_TEST_TOKEN }}
+          out-file-path: './downloader-test'
 
-        echo "Downloaded files:"
-        echo ${{steps.download-public.outputs.downloaded_files}}
+      - name: List downloaded files from private repo
+        shell: bash
+        run: ls -lrth downloader-test
+
+      - name: Read output variable set by previous steps
+        shell: bash
+        run: |
+          if [ -n ${{steps.download-public.outputs.tag_name}} ]; then
+            echo ${{steps.download-public.outputs.tag_name}}
+          else echo "Unable to read output variable from step download-public"; exit 1
+          fi
+
+          if [ -n ${{steps.download-private.outputs.tag_name}} ]; then
+            echo ${{steps.download-private.outputs.tag_name}}
+          else echo "Unable to read output variable from step download-private"; exit 1
+          fi
+
+          echo "Downloaded files:"
+          echo ${{steps.download-public.outputs.downloaded_files}}

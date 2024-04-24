@@ -1,14 +1,14 @@
-import * as core from "@actions/core"
-import * as fs from "fs"
-import * as io from "@actions/io"
-import * as path from "path"
-import * as thc from "typed-rest-client/HttpClient"
-import {minimatch} from "minimatch"
+import * as core from '@actions/core'
+import * as fs from 'fs'
+import * as io from '@actions/io'
+import * as path from 'path'
+import * as thc from 'typed-rest-client/HttpClient'
+import { minimatch } from 'minimatch'
 
-import {DownloadMetaData, GithubRelease} from "./gh-api"
-import {IHeaders, IHttpClientResponse} from "typed-rest-client/Interfaces"
+import { DownloadMetaData, GithubRelease } from './gh-api'
+import { IHeaders, IHttpClientResponse } from 'typed-rest-client/Interfaces'
 
-import {IReleaseDownloadSettings} from "./download-settings"
+import { IReleaseDownloadSettings } from './download-settings'
 
 export class ReleaseDownloader {
   private httpClient: thc.HttpClient
@@ -30,19 +30,19 @@ export class ReleaseDownloader {
         downloadSettings.sourceRepoPath,
         downloadSettings.preRelease
       )
-    } else if (downloadSettings.tag !== "") {
+    } else if (downloadSettings.tag !== '') {
       ghRelease = await this.getReleaseByTag(
         downloadSettings.sourceRepoPath,
         downloadSettings.tag
       )
-    } else if (downloadSettings.id !== "") {
+    } else if (downloadSettings.id !== '') {
       ghRelease = await this.getReleaseById(
         downloadSettings.sourceRepoPath,
         downloadSettings.id
       )
     } else {
       throw new Error(
-        "Config error: Please input a valid tag or release ID, or specify `latest`"
+        'Config error: Please input a valid tag or release ID, or specify `latest`'
       )
     }
 
@@ -57,9 +57,9 @@ export class ReleaseDownloader {
     )
 
     // Set the output variables for use by other actions
-    core.setOutput("tag_name", ghRelease.tag_name)
-    core.setOutput("release_name", ghRelease.name)
-    core.setOutput("downloaded_files", result)
+    core.setOutput('tag_name', ghRelease.tag_name)
+    core.setOutput('release_name', ghRelease.name)
+    core.setOutput('downloaded_files', result)
 
     return result
   }
@@ -74,7 +74,7 @@ export class ReleaseDownloader {
   ): Promise<GithubRelease> {
     core.info(`Fetching latest release for repo ${repoPath}`)
 
-    const headers: IHeaders = {Accept: "application/vnd.github.v3+json"}
+    const headers: IHeaders = { Accept: 'application/vnd.github.v3+json' }
     let response: IHttpClientResponse
 
     if (!preRelease) {
@@ -112,7 +112,7 @@ export class ReleaseDownloader {
         release = latestPreRelease
         core.info(`Found latest pre-release version: ${release.tag_name}`)
       } else {
-        throw new Error("No prereleases found!")
+        throw new Error('No prereleases found!')
       }
     }
 
@@ -130,11 +130,11 @@ export class ReleaseDownloader {
   ): Promise<GithubRelease> {
     core.info(`Fetching release ${tag} from repo ${repoPath}`)
 
-    if (tag === "") {
-      throw new Error("Config error: Please input a valid tag")
+    if (tag === '') {
+      throw new Error('Config error: Please input a valid tag')
     }
 
-    const headers: IHeaders = {Accept: "application/vnd.github.v3+json"}
+    const headers: IHeaders = { Accept: 'application/vnd.github.v3+json' }
 
     const response = await this.httpClient.get(
       `${this.apiRoot}/repos/${repoPath}/releases/tags/${tag}`,
@@ -166,11 +166,11 @@ export class ReleaseDownloader {
   ): Promise<GithubRelease> {
     core.info(`Fetching release id:${id} from repo ${repoPath}`)
 
-    if (id === "") {
-      throw new Error("Config error: Please input a valid release ID")
+    if (id === '') {
+      throw new Error('Config error: Please input a valid release ID')
     }
 
-    const headers: IHeaders = {Accept: "application/vnd.github.v3+json"}
+    const headers: IHeaders = { Accept: 'application/vnd.github.v3+json' }
 
     const response = await this.httpClient.get(
       `${this.apiRoot}/repos/${repoPath}/releases/${id}`,
@@ -207,7 +207,7 @@ export class ReleaseDownloader {
 
           const dData: DownloadMetaData = {
             fileName: asset.name,
-            url: asset["url"],
+            url: asset['url'],
             isTarBallOrZipBall: false
           }
           downloads.push(dData)
@@ -224,7 +224,7 @@ export class ReleaseDownloader {
     }
 
     if (downloadSettings.tarBall) {
-      const repoName = downloadSettings.sourceRepoPath.split("/")[1]
+      const repoName = downloadSettings.sourceRepoPath.split('/')[1]
       downloads.push({
         fileName: `${repoName}-${ghRelease.tag_name}.tar.gz`,
         url: ghRelease.tarball_url,
@@ -233,7 +233,7 @@ export class ReleaseDownloader {
     }
 
     if (downloadSettings.zipBall) {
-      const repoName = downloadSettings.sourceRepoPath.split("/")[1]
+      const repoName = downloadSettings.sourceRepoPath.split('/')[1]
       downloads.push({
         fileName: `${repoName}-${ghRelease.tag_name}.zip`,
         url: ghRelease.zipball_url,
@@ -274,11 +274,11 @@ export class ReleaseDownloader {
     outputPath: string
   ): Promise<string> {
     const headers: IHeaders = {
-      Accept: "application/octet-stream"
+      Accept: 'application/octet-stream'
     }
 
     if (asset.isTarBallOrZipBall) {
-      headers["Accept"] = "*/*"
+      headers['Accept'] = '*/*'
     }
 
     core.info(`Downloading file: ${asset.fileName} to: ${outputPath}`)
@@ -303,10 +303,10 @@ export class ReleaseDownloader {
     const fileStream: fs.WriteStream = fs.createWriteStream(outFilePath)
 
     return new Promise((resolve, reject) => {
-      fileStream.on("error", err => reject(err))
+      fileStream.on('error', err => reject(err))
       const outStream = httpClientResponse.message.pipe(fileStream)
 
-      outStream.on("close", () => {
+      outStream.on('close', () => {
         resolve(outFilePath)
       })
     })
