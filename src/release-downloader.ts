@@ -3,6 +3,7 @@ import * as fs from "fs"
 import * as io from "@actions/io"
 import * as path from "path"
 import * as thc from "typed-rest-client/HttpClient"
+import {minimatch} from "minimatch"
 
 import {DownloadMetaData, GithubRelease} from "./gh-api"
 import {IHeaders, IHttpClientResponse} from "typed-rest-client/Interfaces"
@@ -198,41 +199,24 @@ export class ReleaseDownloader {
 
     if (downloadSettings.fileName.length > 0) {
       if (ghRelease && ghRelease.assets.length > 0) {
-        if (downloadSettings.fileName.includes("*")) {
-          // Download all assets
-          for (const asset of ghRelease.assets) {
-            if (
-              !new RegExp(
-                `^${downloadSettings.fileName.replace(/\*/g, "(.)*")}$`,
-                ""
-              ).test(asset["name"])
-            ) {
-              continue
-            }
+        for (const asset of ghRelease.assets) {
+          // download only matching file names
+          if (!minimatch(asset.name, downloadSettings.fileName)) {
+            continue
+          }
 
-            const dData: DownloadMetaData = {
-              fileName: asset["name"],
-              url: asset["url"],
-              isTarBallOrZipBall: false
-            }
-            downloads.push(dData)
+          const dData: DownloadMetaData = {
+            fileName: asset.name,
+            url: asset["url"],
+            isTarBallOrZipBall: false
           }
-        } else {
-          const asset = ghRelease.assets.find(
-            a => a.name === downloadSettings.fileName
+          downloads.push(dData)
+        }
+
+        if (downloads.length === 0) {
+          throw new Error(
+            `Asset with name ${downloadSettings.fileName} not found!`
           )
-          if (asset) {
-            const dData: DownloadMetaData = {
-              fileName: asset["name"],
-              url: asset["url"],
-              isTarBallOrZipBall: false
-            }
-            downloads.push(dData)
-          } else {
-            throw new Error(
-              `Asset with name ${downloadSettings.fileName} not found!`
-            )
-          }
         }
       } else {
         throw new Error(`No assets found in release ${ghRelease.name}`)
