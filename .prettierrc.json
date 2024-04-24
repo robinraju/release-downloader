@@ -3,9 +3,14 @@
   "tabWidth": 2,
   "useTabs": false,
   "semi": false,
-  "singleQuote": false,
+  "singleQuote": true,
+  "quoteProps": "as-needed",
+  "jsxSingleQuote": false,
   "trailingComma": "none",
-  "bracketSpacing": false,
+  "bracketSpacing": true,
+  "bracketSameLine": true,
   "arrowParens": "avoid",
-  "parser": "typescript"
+  "proseWrap": "always",
+  "htmlWhitespaceSensitivity": "css",
+  "endOfLine": "lf"
 }

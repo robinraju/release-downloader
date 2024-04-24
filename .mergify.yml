@@ -1,12 +1,12 @@
 pull_request_rules:
   - name: Automatic merge PR by dependabot
     conditions:
-      - "author=dependabot[bot]"
-      - "status-success=build (ubuntu-latest)"
-      - "status-success=build (macos-latest)"
-      - "status-success=build (windows-latest)"
+      - 'author=dependabot[bot]'
+      - 'status-success=build (ubuntu-latest)'
+      - 'status-success=build (macos-latest)'
+      - 'status-success=build (windows-latest)'
     actions:
       merge:
         method: squash
-      delete_head_branch: 
+      delete_head_branch:
         force: true

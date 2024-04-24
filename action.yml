@@ -1,66 +1,79 @@
-name: "release-downloader"
-description: "Download release assets from private or public github repositories"
-author: "Robin Raju"
+name: 'release-downloader'
+description:
+  'Download release assets from private or public github repositories'
+author: 'Robin Raju'
 inputs:
   repository:
-    description: "The source repository path. Expected format {owner}/{repo}"
+    description: 'The source repository path. Expected format {owner}/{repo}'
     default: ${{ github.repository }}
     required: false
   latest:
-    description: "A flag to choose between latest release and remaining releases"
-    default: "false"
+    description:
+      'A flag to choose between latest release and remaining releases'
+    default: 'false'
     required: false
   preRelease:
-    description: "A flag to download from prerelease. It should be combined with latest flag"
-    default: "false"
+    description:
+      'A flag to download from prerelease. It should be combined with latest
+      flag'
+    default: 'false'
     required: false
   tag:
-    description: "The github tag to download the release from"
-    default: ""
+    description: 'The github tag to download the release from'
+    default: ''
     required: false
   fileName:
-    description: "Name of the file to download (use '*' to download all assets other than tarball or zipball)"
-    default: ""
+    description:
+      "Name of the file to download (use '*' to download all assets other than
+      tarball or zipball)"
+    default: ''
     required: false
   tarBall:
-    description: "Download tarball from assets"
-    default: "false"
+    description: 'Download tarball from assets'
+    default: 'false'
     required: false
   zipBall:
-    description: "Download zipball from assets"
-    default: "false"
+    description: 'Download zipball from assets'
+    default: 'false'
     required: false
   out-file-path:
-    description: "Relative path under $GITHUB_WORKSPACE to place the downloaded files"
-    default: "."
+    description:
+      'Relative path under $GITHUB_WORKSPACE to place the downloaded files'
+    default: '.'
     required: true
   extract:
-    description: "If the downloaded assets should be extracted to `out-file-path`. Supports tar, tar.gz and zip"
-    default: "false"
+    description:
+      'If the downloaded assets should be extracted to `out-file-path`. Supports
+      tar, tar.gz and zip'
+    default: 'false'
     required: false
   token:
-    description: "Github token to access private repos"
+    description: 'Github token to access private repos'
     default: ${{ github.token }}
     required: false
   github-api-url:
-    description: "The URL of the Github API, only use this input if you are using Github Enterprise"
-    default: "https://api.github.com"
+    description:
+      'The URL of the Github API, only use this input if you are using Github
+      Enterprise'
+    default: 'https://api.github.com'
     required: false
   releaseId:
-    description: "The release id to download the file from"
-    default: ""
+    description: 'The release id to download the file from'
+    default: ''
     required: false
 outputs:
   tag_name:
-    description: "The github tag used to download the release"
+    description: 'The github tag used to download the release'
   release_name:
-    description: "The release name / title"
+    description: 'The release name / title'
   downloaded_files:
-    description: "The array of downloaded files, useful when using wildcard '*' to download multiple files."      
+    description:
+      "The array of downloaded files, useful when using wildcard '*' to download
+      multiple files."
 
 runs:
-  using: "node20"
-  main: "dist/index.js"
+  using: 'node20'
+  main: 'dist/index.js'
 branding:
-  icon: "download"
-  color: "green"
+  icon: 'download'
+  color: 'green'
