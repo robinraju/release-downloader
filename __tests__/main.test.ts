@@ -101,6 +101,28 @@ beforeEach(() => {
   nock("https://api.github.com/")
     .get("/repos/foo/slick-pg/releases")
     .reply(200, readFromFile("5-without-prerelease.json"))
+
+  nock("https://api.github.com")
+    .get("/repos/robinraju/tar-zip-ball-only-repo/releases/latest")
+    .reply(200, readFromFile("6-tar-zip-ball-only-repo.json"))
+
+  nock("https://api.github.com", {
+    reqheaders: {accept: "*/*"}
+  })
+    .get("/repos/robinraju/tar-zip-ball-only-repo/tarball/1.0.0")
+    .replyWithFile(
+      200,
+      __dirname + "/resource/assets/tar-zip-ball-only-repo.tar.gz"
+    )
+
+  nock("https://api.github.com", {
+    reqheaders: {accept: "*/*"}
+  })
+    .get("/repos/robinraju/tar-zip-ball-only-repo/zipball/1.0.0")
+    .replyWithFile(
+      200,
+      __dirname + "/resource/assets/tar-zip-ball-only-repo.zip"
+    )
 })
 
 afterEach(async () => {
@@ -384,3 +406,21 @@ test("Fail when a release with no prerelease is obtained", async () => {
   const result = downloader.download(downloadSettings)
   await expect(result).rejects.toThrow("No prereleases found!")
 }, 10000)
+
+test("Download from a release containing only tarBall & zipBall", async () => {
+  const downloadSettings: IReleaseDownloadSettings = {
+    sourceRepoPath: "robinraju/tar-zip-ball-only-repo",
+    isLatest: true,
+    preRelease: false,
+    tag: "",
+    id: "",
+    fileName: "",
+    tarBall: true,
+    zipBall: true,
+    extractAssets: false,
+    outFilePath: outputFilePath
+  }
+
+  const result = await downloader.download(downloadSettings)
+  expect(result.length).toBe(2)
+})

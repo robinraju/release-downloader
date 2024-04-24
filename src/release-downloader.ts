@@ -3,6 +3,7 @@ import * as fs from "fs"
 import * as io from "@actions/io"
 import * as path from "path"
 import * as thc from "typed-rest-client/HttpClient"
+import {minimatch} from "minimatch"
 
 import {DownloadMetaData, GithubRelease} from "./gh-api"
 import {IHeaders, IHttpClientResponse} from "typed-rest-client/Interfaces"
@@ -196,45 +197,30 @@ export class ReleaseDownloader {
   ): DownloadMetaData[] {
     const downloads: DownloadMetaData[] = []
 
-    if (ghRelease && ghRelease.assets.length > 0) {
-      if (downloadSettings.fileName.includes("*")) {
-        // Download all assets
+    if (downloadSettings.fileName.length > 0) {
+      if (ghRelease && ghRelease.assets.length > 0) {
         for (const asset of ghRelease.assets) {
-          if (
-            !new RegExp(
-              `^${downloadSettings.fileName.replace(/\*/g, "(.)*")}$`,
-              ""
-            ).test(asset["name"])
-          ) {
+          // download only matching file names
+          if (!minimatch(asset.name, downloadSettings.fileName)) {
             continue
           }
 
           const dData: DownloadMetaData = {
-            fileName: asset["name"],
+            fileName: asset.name,
             url: asset["url"],
             isTarBallOrZipBall: false
           }
           downloads.push(dData)
         }
-      } else {
-        const asset = ghRelease.assets.find(
-          a => a.name === downloadSettings.fileName
-        )
-        if (asset) {
-          const dData: DownloadMetaData = {
-            fileName: asset["name"],
-            url: asset["url"],
-            isTarBallOrZipBall: false
-          }
-          downloads.push(dData)
-        } else {
+
+        if (downloads.length === 0) {
           throw new Error(
             `Asset with name ${downloadSettings.fileName} not found!`
           )
         }
+      } else {
+        throw new Error(`No assets found in release ${ghRelease.name}`)
       }
-    } else {
-      throw new Error(`No assets found in release ${ghRelease.name}`)
     }
 
     if (downloadSettings.tarBall) {

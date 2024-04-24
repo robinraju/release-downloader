@@ -51,6 +51,19 @@ jobs:
       shell: bash
       run: ls -lrth test-downloads
 
+    - name: Download tarBall & zipBall only
+      uses: ./
+      with: 
+        repository: "robinraju/probable-potato"
+        tag: "1.0.2"
+        tarBall: true
+        zipBall: true
+        out-file-path: "./public-download"
+
+    - name: List downloaded files
+      shell: bash
+      run: ls -lrth public-download  
+        
     - name: Test download latest pre-release
       uses: ./
       with: 
