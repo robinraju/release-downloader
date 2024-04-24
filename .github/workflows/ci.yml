@@ -55,7 +55,7 @@ jobs:
       uses: ./
       with: 
         repository: "robinraju/probable-potato"
-        latest: true
+        tag: "1.0.2"
         tarBall: true
         zipBall: true
         out-file-path: "./public-download"
