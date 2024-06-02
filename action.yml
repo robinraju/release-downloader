@@ -66,7 +66,9 @@ inputs:
     default: ''
     required: false
   addToPath:
-    description: 'Whether to add the output path to PATH (so a binary can be global referenced)'
+    description:
+      'Whether to add the output path to PATH (so a binary can be global
+      referenced)'
     default: 'false'
     required: false
 outputs:
