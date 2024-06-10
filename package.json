@@ -67,7 +67,7 @@
     "minimatch": "^9.0.4",
     "node-stream-zip": "^1.15.0",
     "tar": "^7.1.0",
-    "typed-rest-client": "^1.8.11"
+    "typed-rest-client": "^2.0.0"
   },
   "devDependencies": {
     "@jest/globals": "^29.7.0",
