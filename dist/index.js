@@ -31238,7 +31238,7 @@ const handlers = __importStar(__nccwpck_require__(4442));
 const inputHelper = __importStar(__nccwpck_require__(6455));
 const thc = __importStar(__nccwpck_require__(5538));
 const node_path_1 = __nccwpck_require__(9411);
-const node_fs_1 = __nccwpck_require__(7561);
+const io = __importStar(__nccwpck_require__(7436));
 const release_downloader_1 = __nccwpck_require__(785);
 const unarchive_1 = __nccwpck_require__(8512);
 async function run() {
@@ -31259,11 +31259,10 @@ async function run() {
         }
         if (downloadSettings.as !== '') {
             // TODO could move logic to above?
-            const inOutFilePath = (0, node_fs_1.readdirSync)(downloadSettings.outFilePath);
-            if (inOutFilePath.length !== 1) {
+            if (res.length !== 1) {
                 throw new Error('`as` can only be used when one file is being downloaded');
             }
-            (0, node_fs_1.renameSync)(inOutFilePath[0], downloadSettings.as);
+            io.mv(res[0], downloadSettings.as);
         }
         if (downloadSettings.addToPathEnvironmentVariable) {
             process.env.PATH += node_path_1.delimiter + downloadSettings.outFilePath;

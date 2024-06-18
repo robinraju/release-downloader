@@ -2,8 +2,8 @@ import * as core from '@actions/core'
 import * as handlers from 'typed-rest-client/Handlers'
 import * as inputHelper from './input-helper'
 import * as thc from 'typed-rest-client/HttpClient'
-import { delimiter } from "node:path";
-import { readdirSync, renameSync } from "node:fs";
+import { delimiter } from 'node:path'
+import * as io from '@actions/io'
 
 import { ReleaseDownloader } from './release-downloader'
 import { extract } from './unarchive'
@@ -32,17 +32,18 @@ async function run(): Promise<void> {
       }
     }
 
-    if (downloadSettings.as !== "") {
+    if (downloadSettings.as !== '') {
       // TODO could move logic to above?
-      const inOutFilePath = readdirSync(downloadSettings.outFilePath);
-      if (inOutFilePath.length !== 1) {
-        throw new Error("`as` can only be used when one file is being downloaded");
+      if (res.length !== 1) {
+        throw new Error(
+          '`as` can only be used when one file is being downloaded'
+        )
       }
-      renameSync(inOutFilePath[0], downloadSettings.as);
+      io.mv(res[0], downloadSettings.as)
     }
 
     if (downloadSettings.addToPathEnvironmentVariable) {
-      process.env.PATH += delimiter + downloadSettings.outFilePath;
+      process.env.PATH += delimiter + downloadSettings.outFilePath
     }
 
     core.info(`Done: ${res}`)
