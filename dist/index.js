@@ -31237,8 +31237,8 @@ const core = __importStar(__nccwpck_require__(2186));
 const handlers = __importStar(__nccwpck_require__(4442));
 const inputHelper = __importStar(__nccwpck_require__(6455));
 const thc = __importStar(__nccwpck_require__(5538));
-const node_path_1 = __nccwpck_require__(9411);
 const io = __importStar(__nccwpck_require__(7436));
+const node_path_1 = __nccwpck_require__(9411);
 const release_downloader_1 = __nccwpck_require__(785);
 const unarchive_1 = __nccwpck_require__(8512);
 async function run() {
@@ -31260,12 +31260,12 @@ async function run() {
         if (downloadSettings.as !== '') {
             // TODO could move logic to above?
             if (res.length !== 1) {
-                throw new Error('`as` can only be used when one file is being downloaded');
+                throw new Error(`'as' can only be used when one file is being downloaded. Downloading ${res}`);
             }
             io.mv(res[0], downloadSettings.as);
         }
-        if (downloadSettings.addToPathEnvironmentVariable) {
-            process.env.PATH += node_path_1.delimiter + downloadSettings.outFilePath;
+        if (downloadSettings.addToPathEnvironmentVariable && process.env.GITHUB_PATH) {
+            process.env.PATH += node_path_1.delimiter + (0, node_path_1.join)(process.env.GITHUB_PATH, downloadSettings.outFilePath);
         }
         core.info(`Done: ${res}`);
     }

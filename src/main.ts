@@ -2,8 +2,8 @@ import * as core from '@actions/core'
 import * as handlers from 'typed-rest-client/Handlers'
 import * as inputHelper from './input-helper'
 import * as thc from 'typed-rest-client/HttpClient'
-import { delimiter } from 'node:path'
 import * as io from '@actions/io'
+import { delimiter, join } from 'node:path'
 
 import { ReleaseDownloader } from './release-downloader'
 import { extract } from './unarchive'
@@ -36,14 +36,14 @@ async function run(): Promise<void> {
       // TODO could move logic to above?
       if (res.length !== 1) {
         throw new Error(
-          '`as` can only be used when one file is being downloaded'
+          `'as' can only be used when one file is being downloaded. Downloading ${res}`
         )
       }
       io.mv(res[0], downloadSettings.as)
     }
 
-    if (downloadSettings.addToPathEnvironmentVariable) {
-      process.env.PATH += delimiter + downloadSettings.outFilePath
+    if (downloadSettings.addToPathEnvironmentVariable && process.env.GITHUB_PATH) {
+      process.env.PATH += delimiter + join(process.env.GITHUB_PATH, downloadSettings.outFilePath)
     }
 
     core.info(`Done: ${res}`)
