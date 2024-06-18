@@ -31262,7 +31262,7 @@ async function run() {
             if (res.length !== 1) {
                 throw new Error(`'as' can only be used when one file is being downloaded. Downloading ${res}`);
             }
-            io.mv(res[0], downloadSettings.as);
+            io.mv(res[0], (0, node_path_1.join)(downloadSettings.outFilePath, downloadSettings.as));
         }
         if (downloadSettings.addToPathEnvironmentVariable && process.env.GITHUB_PATH) {
             process.env.PATH += node_path_1.delimiter + (0, node_path_1.join)(process.env.GITHUB_PATH, downloadSettings.outFilePath);

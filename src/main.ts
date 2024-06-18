@@ -39,7 +39,7 @@ async function run(): Promise<void> {
           `'as' can only be used when one file is being downloaded. Downloading ${res}`
         )
       }
-      io.mv(res[0], downloadSettings.as)
+      io.mv(res[0], join(downloadSettings.outFilePath, downloadSettings.as))
     }
 
     if (downloadSettings.addToPathEnvironmentVariable && process.env.GITHUB_PATH) {
