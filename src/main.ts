@@ -4,9 +4,11 @@ import * as inputHelper from './input-helper'
 import * as thc from 'typed-rest-client/HttpClient'
 import * as io from '@actions/io'
 import { delimiter, join } from 'node:path'
+import { readdirSync, chmodSync, constants } from 'fs'
 
 import { ReleaseDownloader } from './release-downloader'
 import { extract } from './unarchive'
+import { statSync } from 'node:fs'
 
 async function run(): Promise<void> {
   try {
@@ -42,8 +44,13 @@ async function run(): Promise<void> {
       io.mv(res[0], join(downloadSettings.outFilePath, downloadSettings.as))
     }
 
-    if (downloadSettings.addToPathEnvironmentVariable && downloadSettings.as !== '' && process.env.GITHUB_PATH) {
+    if (downloadSettings.addToPathEnvironmentVariable) {
       const out = downloadSettings.outFilePath;
+      // Make executables executable
+      for (const file of readdirSync(out)) {
+        const newMode = statSync(file).mode | constants.S_IXUSR | constants.S_IXGRP | constants.S_IXOTH
+        chmodSync(file, newMode);
+      }
       core.addPath(out);
       core.info(`Added ${out} to PATH`);
     }
