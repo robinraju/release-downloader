@@ -43,7 +43,9 @@ async function run(): Promise<void> {
     }
 
     if (downloadSettings.addToPathEnvironmentVariable && downloadSettings.as !== '' && process.env.GITHUB_PATH) {
-      core.addPath(join(process.env.GITHUB_PATH, downloadSettings.outFilePath, downloadSettings.as))
+      const pathToExecutable = join(downloadSettings.outFilePath, downloadSettings.as);
+      core.info(`Added ${pathToExecutable} to PATH`);
+      core.addPath(pathToExecutable);
     }
 
     core.info(`Done: ${res}`)

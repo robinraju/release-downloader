@@ -31265,7 +31265,9 @@ async function run() {
             io.mv(res[0], (0, node_path_1.join)(downloadSettings.outFilePath, downloadSettings.as));
         }
         if (downloadSettings.addToPathEnvironmentVariable && downloadSettings.as !== '' && process.env.GITHUB_PATH) {
-            core.addPath((0, node_path_1.join)(process.env.GITHUB_PATH, downloadSettings.outFilePath, downloadSettings.as));
+            const pathToExecutable = (0, node_path_1.join)(downloadSettings.outFilePath, downloadSettings.as);
+            core.info(`Added ${pathToExecutable} to PATH`);
+            core.addPath(pathToExecutable);
         }
         core.info(`Done: ${res}`);
     }
