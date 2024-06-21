@@ -42,8 +42,8 @@ async function run(): Promise<void> {
       io.mv(res[0], join(downloadSettings.outFilePath, downloadSettings.as))
     }
 
-    if (downloadSettings.addToPathEnvironmentVariable && process.env.GITHUB_PATH) {
-      core.addPath(join(process.env.GITHUB_PATH, downloadSettings.outFilePath))
+    if (downloadSettings.addToPathEnvironmentVariable && downloadSettings.as !== '' && process.env.GITHUB_PATH) {
+      core.addPath(join(process.env.GITHUB_PATH, downloadSettings.outFilePath, downloadSettings.as))
     }
 
     core.info(`Done: ${res}`)
