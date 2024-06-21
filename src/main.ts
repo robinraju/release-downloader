@@ -2,13 +2,10 @@ import * as core from '@actions/core'
 import * as handlers from 'typed-rest-client/Handlers'
 import * as inputHelper from './input-helper'
 import * as thc from 'typed-rest-client/HttpClient'
-import * as io from '@actions/io'
-import { delimiter, join } from 'node:path'
-import { readdirSync, chmodSync, constants } from 'fs'
+import { readdirSync, chmodSync, constants, renameSync, statSync } from 'node:fs'
 
 import { ReleaseDownloader } from './release-downloader'
 import { extract } from './unarchive'
-import { statSync } from 'node:fs'
 
 async function run(): Promise<void> {
   try {
@@ -41,14 +38,15 @@ async function run(): Promise<void> {
           `'as' can only be used when one file is being downloaded. Downloading ${res}`
         )
       }
-      io.mv(res[0], join(downloadSettings.outFilePath, downloadSettings.as))
+      renameSync(res[0], downloadSettings.as)
     }
 
     if (downloadSettings.addToPathEnvironmentVariable) {
       const out = downloadSettings.outFilePath;
       // Make executables executable
       for (const file of readdirSync(out)) {
-        const newMode = statSync(file).mode | constants.S_IXUSR | constants.S_IXGRP | constants.S_IXOTH
+        core.info(`Making ${file} executable`);
+        const newMode = statSync(file).mode | constants.S_IXUSR | constants.S_IXGRP | constants.S_IXOTH;
         chmodSync(file, newMode);
       }
       core.addPath(out);

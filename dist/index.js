@@ -31237,12 +31237,9 @@ const core = __importStar(__nccwpck_require__(2186));
 const handlers = __importStar(__nccwpck_require__(4442));
 const inputHelper = __importStar(__nccwpck_require__(6455));
 const thc = __importStar(__nccwpck_require__(5538));
-const io = __importStar(__nccwpck_require__(7436));
-const node_path_1 = __nccwpck_require__(9411);
-const fs_1 = __nccwpck_require__(7147);
+const node_fs_1 = __nccwpck_require__(7561);
 const release_downloader_1 = __nccwpck_require__(785);
 const unarchive_1 = __nccwpck_require__(8512);
-const node_fs_1 = __nccwpck_require__(7561);
 async function run() {
     try {
         const downloadSettings = inputHelper.getInputs();
@@ -31264,14 +31261,15 @@ async function run() {
             if (res.length !== 1) {
                 throw new Error(`'as' can only be used when one file is being downloaded. Downloading ${res}`);
             }
-            io.mv(res[0], (0, node_path_1.join)(downloadSettings.outFilePath, downloadSettings.as));
+            (0, node_fs_1.renameSync)(res[0], downloadSettings.as);
         }
         if (downloadSettings.addToPathEnvironmentVariable) {
             const out = downloadSettings.outFilePath;
             // Make executables executable
-            for (const file of (0, fs_1.readdirSync)(out)) {
-                const newMode = (0, node_fs_1.statSync)(file).mode | fs_1.constants.S_IXUSR | fs_1.constants.S_IXGRP | fs_1.constants.S_IXOTH;
-                (0, fs_1.chmodSync)(file, newMode);
+            for (const file of (0, node_fs_1.readdirSync)(out)) {
+                core.info(`Making ${file} executable`);
+                const newMode = (0, node_fs_1.statSync)(file).mode | node_fs_1.constants.S_IXUSR | node_fs_1.constants.S_IXGRP | node_fs_1.constants.S_IXOTH;
+                (0, node_fs_1.chmodSync)(file, newMode);
             }
             core.addPath(out);
             core.info(`Added ${out} to PATH`);
