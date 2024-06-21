@@ -48,4 +48,9 @@ export interface IReleaseDownloadSettings {
    * Extract downloaded files to outFilePath
    */
   extractAssets: boolean
+
+  /**
+   * Add downloaded file path to the PATH environment variable
+   */
+  addToPathEnvironmentVariable: boolean
 }

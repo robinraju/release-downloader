@@ -61,6 +61,12 @@ inputs:
     description: 'The release id to download the file from'
     default: ''
     required: false
+  addToPath:
+    description:
+      'Whether to add the output path to PATH (so a binary can be global
+      referenced)'
+    default: 'false'
+    required: false
 outputs:
   tag_name:
     description: 'The github tag used to download the release'
