@@ -3,6 +3,7 @@ import * as handlers from 'typed-rest-client/Handlers'
 import * as inputHelper from './input-helper'
 import * as thc from 'typed-rest-client/HttpClient'
 import { readdirSync, chmodSync, constants, renameSync, statSync } from 'node:fs'
+import { basename, join } from 'node:path'
 
 import { ReleaseDownloader } from './release-downloader'
 import { extract } from './unarchive'
@@ -31,23 +32,21 @@ async function run(): Promise<void> {
       }
     }
 
-    if (downloadSettings.as !== '') {
-      // TODO could move logic to above?
-      if (res.length !== 1) {
-        throw new Error(
-          `'as' can only be used when one file is being downloaded. Downloading ${res}`
-        )
-      }
-      renameSync(res[0], downloadSettings.as)
-    }
-
     if (downloadSettings.addToPathEnvironmentVariable) {
       const out = downloadSettings.outFilePath;
       // Make executables executable
       for (const file of readdirSync(out)) {
-        core.info(`Making ${file} executable`);
-        const newMode = statSync(file).mode | constants.S_IXUSR | constants.S_IXGRP | constants.S_IXOTH;
-        chmodSync(file, newMode);
+        let full = join(out, file);
+        const toSliceTo = /-[0-9]/.exec(file);
+        if (toSliceTo) {
+          const old = full;
+          full = join(out, file.slice(0, toSliceTo.index));
+          renameSync(old, full);
+          core.debug(`Renamed ${old} to ${full}`);
+        }
+        const newMode = statSync(full).mode | constants.S_IXUSR | constants.S_IXGRP | constants.S_IXOTH;
+        chmodSync(full, newMode);
+        core.info(`Added ${full} executable`);
       }
       core.addPath(out);
       core.info(`Added ${out} to PATH`);

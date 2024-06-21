@@ -55,6 +55,5 @@ export function getInputs(): IReleaseDownloadSettings {
       core.getInput('out-file-path') || '.'
     ),
     addToPathEnvironmentVariable: core.getBooleanInput('addToPath'),
-    as: core.getInput('as')
   }
 }

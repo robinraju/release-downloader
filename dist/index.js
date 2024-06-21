@@ -31196,7 +31196,6 @@ function getInputs() {
         extractAssets: core.getBooleanInput('extract'),
         outFilePath: path.resolve(githubWorkspacePath, core.getInput('out-file-path') || '.'),
         addToPathEnvironmentVariable: core.getBooleanInput('addToPath'),
-        as: core.getInput('as')
     };
 }
 exports.getInputs = getInputs;
@@ -31238,6 +31237,7 @@ const handlers = __importStar(__nccwpck_require__(4442));
 const inputHelper = __importStar(__nccwpck_require__(6455));
 const thc = __importStar(__nccwpck_require__(5538));
 const node_fs_1 = __nccwpck_require__(7561);
+const node_path_1 = __nccwpck_require__(9411);
 const release_downloader_1 = __nccwpck_require__(785);
 const unarchive_1 = __nccwpck_require__(8512);
 async function run() {
@@ -31256,20 +31256,21 @@ async function run() {
                 await (0, unarchive_1.extract)(asset, downloadSettings.outFilePath);
             }
         }
-        if (downloadSettings.as !== '') {
-            // TODO could move logic to above?
-            if (res.length !== 1) {
-                throw new Error(`'as' can only be used when one file is being downloaded. Downloading ${res}`);
-            }
-            (0, node_fs_1.renameSync)(res[0], downloadSettings.as);
-        }
         if (downloadSettings.addToPathEnvironmentVariable) {
             const out = downloadSettings.outFilePath;
             // Make executables executable
             for (const file of (0, node_fs_1.readdirSync)(out)) {
-                core.info(`Making ${file} executable`);
-                const newMode = (0, node_fs_1.statSync)(file).mode | node_fs_1.constants.S_IXUSR | node_fs_1.constants.S_IXGRP | node_fs_1.constants.S_IXOTH;
-                (0, node_fs_1.chmodSync)(file, newMode);
+                let full = (0, node_path_1.join)(out, file);
+                const toSliceTo = /-[0-9]/.exec(file);
+                if (toSliceTo) {
+                    const old = full;
+                    full = (0, node_path_1.join)(out, file.slice(0, toSliceTo.index));
+                    (0, node_fs_1.renameSync)(old, full);
+                    core.debug(`Renamed ${old} to ${full}`);
+                }
+                const newMode = (0, node_fs_1.statSync)(full).mode | node_fs_1.constants.S_IXUSR | node_fs_1.constants.S_IXGRP | node_fs_1.constants.S_IXOTH;
+                (0, node_fs_1.chmodSync)(full, newMode);
+                core.info(`Added ${full} executable`);
             }
             core.addPath(out);
             core.info(`Added ${out} to PATH`);
