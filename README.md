@@ -8,7 +8,7 @@ specified files from both private and public repositories.
 ## Usage
 
 ```yaml
-- uses: robinraju/release-downloader@v1.11
+- uses: robinraju/release-downloader@v1
   with:
     # The source repository path.
     # Expected format {owner}/{repo}
@@ -93,7 +93,7 @@ ${{steps.<step-id>.outputs.tag_name}}
 ### Download asset from the latest release in the current repository
 
 ```yaml
-- uses: robinraju/release-downloader@v1.11
+- uses: robinraju/release-downloader@v1
   with:
     latest: true
     fileName: 'foo.zip'
@@ -102,7 +102,7 @@ ${{steps.<step-id>.outputs.tag_name}}
 ### Download asset from a specific release version
 
 ```yaml
-- uses: robinraju/release-downloader@v1.11
+- uses: robinraju/release-downloader@v1
   with:
     repository: 'owner/repo'
     tag: 'v1.0.0'
@@ -112,7 +112,7 @@ ${{steps.<step-id>.outputs.tag_name}}
 ### Download tarball and zipball
 
 ```yaml
-- uses: robinraju/release-downloader@v1.11
+- uses: robinraju/release-downloader@v1
   with:
     repository: 'owner/repo'
     latest: true
@@ -126,7 +126,7 @@ ${{steps.<step-id>.outputs.tag_name}}
 ### Download multiple assets
 
 ```yaml
-- uses: robinraju/release-downloader@v1.11
+- uses: robinraju/release-downloader@v1
   with:
     repository: 'owner/repo'
     latest: true
@@ -138,7 +138,7 @@ ${{steps.<step-id>.outputs.tag_name}}
 ### Download all assets if more than one files are available
 
 ```yaml
-- uses: robinraju/release-downloader@v1.11
+- uses: robinraju/release-downloader@v1
   with:
     repository: 'owner/repo'
     latest: true
@@ -148,7 +148,7 @@ ${{steps.<step-id>.outputs.tag_name}}
 ### Download assets using wildcard pattern
 
 ```yaml
-- uses: robinraju/release-downloader@v1.11
+- uses: robinraju/release-downloader@v1
   with:
     repository: 'owner/repo'
     latest: true
@@ -158,7 +158,7 @@ ${{steps.<step-id>.outputs.tag_name}}
 ### Download a release using its id
 
 ```yaml
-- uses: robinraju/release-downloader@v1.11
+- uses: robinraju/release-downloader@v1
   with:
     releaseId: '123123'
     fileName: 'foo.zip'
@@ -167,7 +167,7 @@ ${{steps.<step-id>.outputs.tag_name}}
 ### Download and extracts archives
 
 ```yaml
-- uses: robinraju/release-downloader@v1.11
+- uses: robinraju/release-downloader@v1
   with:
     fileName: 'foo.zip'
     latest: true
@@ -177,7 +177,7 @@ ${{steps.<step-id>.outputs.tag_name}}
 ### Download latest prerelease
 
 ```yaml
-- uses: robinraju/release-downloader@v1.11
+- uses: robinraju/release-downloader@v1
   with:
     repository: 'owner/repo'
     fileName: 'foo.zip'
