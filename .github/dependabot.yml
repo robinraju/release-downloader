@@ -24,3 +24,4 @@ updates:
         dependency-type: production
         update-types:
           - patch
+.github/dependabot.yml
