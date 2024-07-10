@@ -60,6 +60,13 @@ specified files from both private and public repositories.
     # Default: "https://api.github.com"
     # Use http(s)://[hostname]/api/v3 to access the API for GitHub Enterprise Server
     github-api-url: ''
+
+    # Add downloaded file path to the PATH environment variable
+    # Default: false
+    # Also strips any information after `-(v?)[0-9]` (which is commonly version and platform information), so that
+    # the binary is name matches its standard name.
+    # Also makes binaries executable via chmod
+    addToPath: false
 ```
 
 ### Output variables

@@ -2736,728 +2736,6 @@ module.exports = function defineDataProperty(
 
 /***/ }),
 
-/***/ 8743:
-/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
-
-"use strict";
-
-
-exports.utils = __nccwpck_require__(4171);
-exports.Cipher = __nccwpck_require__(5068);
-exports.DES = __nccwpck_require__(2957);
-exports.CBC = __nccwpck_require__(9594);
-exports.EDE = __nccwpck_require__(3408);
-
-
-/***/ }),
-
-/***/ 9594:
-/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
-
-"use strict";
-
-
-var assert = __nccwpck_require__(910);
-var inherits = __nccwpck_require__(4124);
-
-var proto = {};
-
-function CBCState(iv) {
-  assert.equal(iv.length, 8, 'Invalid IV length');
-
-  this.iv = new Array(8);
-  for (var i = 0; i < this.iv.length; i++)
-    this.iv[i] = iv[i];
-}
-
-function instantiate(Base) {
-  function CBC(options) {
-    Base.call(this, options);
-    this._cbcInit();
-  }
-  inherits(CBC, Base);
-
-  var keys = Object.keys(proto);
-  for (var i = 0; i < keys.length; i++) {
-    var key = keys[i];
-    CBC.prototype[key] = proto[key];
-  }
-
-  CBC.create = function create(options) {
-    return new CBC(options);
-  };
-
-  return CBC;
-}
-
-exports.instantiate = instantiate;
-
-proto._cbcInit = function _cbcInit() {
-  var state = new CBCState(this.options.iv);
-  this._cbcState = state;
-};
-
-proto._update = function _update(inp, inOff, out, outOff) {
-  var state = this._cbcState;
-  var superProto = this.constructor.super_.prototype;
-
-  var iv = state.iv;
-  if (this.type === 'encrypt') {
-    for (var i = 0; i < this.blockSize; i++)
-      iv[i] ^= inp[inOff + i];
-
-    superProto._update.call(this, iv, 0, out, outOff);
-
-    for (var i = 0; i < this.blockSize; i++)
-      iv[i] = out[outOff + i];
-  } else {
-    superProto._update.call(this, inp, inOff, out, outOff);
-
-    for (var i = 0; i < this.blockSize; i++)
-      out[outOff + i] ^= iv[i];
-
-    for (var i = 0; i < this.blockSize; i++)
-      iv[i] = inp[inOff + i];
-  }
-};
-
-
-/***/ }),
-
-/***/ 5068:
-/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
-
-"use strict";
-
-
-var assert = __nccwpck_require__(910);
-
-function Cipher(options) {
-  this.options = options;
-
-  this.type = this.options.type;
-  this.blockSize = 8;
-  this._init();
-
-  this.buffer = new Array(this.blockSize);
-  this.bufferOff = 0;
-  this.padding = options.padding !== false
-}
-module.exports = Cipher;
-
-Cipher.prototype._init = function _init() {
-  // Might be overrided
-};
-
-Cipher.prototype.update = function update(data) {
-  if (data.length === 0)
-    return [];
-
-  if (this.type === 'decrypt')
-    return this._updateDecrypt(data);
-  else
-    return this._updateEncrypt(data);
-};
-
-Cipher.prototype._buffer = function _buffer(data, off) {
-  // Append data to buffer
-  var min = Math.min(this.buffer.length - this.bufferOff, data.length - off);
-  for (var i = 0; i < min; i++)
-    this.buffer[this.bufferOff + i] = data[off + i];
-  this.bufferOff += min;
-
-  // Shift next
-  return min;
-};
-
-Cipher.prototype._flushBuffer = function _flushBuffer(out, off) {
-  this._update(this.buffer, 0, out, off);
-  this.bufferOff = 0;
-  return this.blockSize;
-};
-
-Cipher.prototype._updateEncrypt = function _updateEncrypt(data) {
-  var inputOff = 0;
-  var outputOff = 0;
-
-  var count = ((this.bufferOff + data.length) / this.blockSize) | 0;
-  var out = new Array(count * this.blockSize);
-
-  if (this.bufferOff !== 0) {
-    inputOff += this._buffer(data, inputOff);
-
-    if (this.bufferOff === this.buffer.length)
-      outputOff += this._flushBuffer(out, outputOff);
-  }
-
-  // Write blocks
-  var max = data.length - ((data.length - inputOff) % this.blockSize);
-  for (; inputOff < max; inputOff += this.blockSize) {
-    this._update(data, inputOff, out, outputOff);
-    outputOff += this.blockSize;
-  }
-
-  // Queue rest
-  for (; inputOff < data.length; inputOff++, this.bufferOff++)
-    this.buffer[this.bufferOff] = data[inputOff];
-
-  return out;
-};
-
-Cipher.prototype._updateDecrypt = function _updateDecrypt(data) {
-  var inputOff = 0;
-  var outputOff = 0;
-
-  var count = Math.ceil((this.bufferOff + data.length) / this.blockSize) - 1;
-  var out = new Array(count * this.blockSize);
-
-  // TODO(indutny): optimize it, this is far from optimal
-  for (; count > 0; count--) {
-    inputOff += this._buffer(data, inputOff);
-    outputOff += this._flushBuffer(out, outputOff);
-  }
-
-  // Buffer rest of the input
-  inputOff += this._buffer(data, inputOff);
-
-  return out;
-};
-
-Cipher.prototype.final = function final(buffer) {
-  var first;
-  if (buffer)
-    first = this.update(buffer);
-
-  var last;
-  if (this.type === 'encrypt')
-    last = this._finalEncrypt();
-  else
-    last = this._finalDecrypt();
-
-  if (first)
-    return first.concat(last);
-  else
-    return last;
-};
-
-Cipher.prototype._pad = function _pad(buffer, off) {
-  if (off === 0)
-    return false;
-
-  while (off < buffer.length)
-    buffer[off++] = 0;
-
-  return true;
-};
-
-Cipher.prototype._finalEncrypt = function _finalEncrypt() {
-  if (!this._pad(this.buffer, this.bufferOff))
-    return [];
-
-  var out = new Array(this.blockSize);
-  this._update(this.buffer, 0, out, 0);
-  return out;
-};
-
-Cipher.prototype._unpad = function _unpad(buffer) {
-  return buffer;
-};
-
-Cipher.prototype._finalDecrypt = function _finalDecrypt() {
-  assert.equal(this.bufferOff, this.blockSize, 'Not enough data to decrypt');
-  var out = new Array(this.blockSize);
-  this._flushBuffer(out, 0);
-
-  return this._unpad(out);
-};
-
-
-/***/ }),
-
-/***/ 2957:
-/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
-
-"use strict";
-
-
-var assert = __nccwpck_require__(910);
-var inherits = __nccwpck_require__(4124);
-
-var utils = __nccwpck_require__(4171);
-var Cipher = __nccwpck_require__(5068);
-
-function DESState() {
-  this.tmp = new Array(2);
-  this.keys = null;
-}
-
-function DES(options) {
-  Cipher.call(this, options);
-
-  var state = new DESState();
-  this._desState = state;
-
-  this.deriveKeys(state, options.key);
-}
-inherits(DES, Cipher);
-module.exports = DES;
-
-DES.create = function create(options) {
-  return new DES(options);
-};
-
-var shiftTable = [
-  1, 1, 2, 2, 2, 2, 2, 2,
-  1, 2, 2, 2, 2, 2, 2, 1
-];
-
-DES.prototype.deriveKeys = function deriveKeys(state, key) {
-  state.keys = new Array(16 * 2);
-
-  assert.equal(key.length, this.blockSize, 'Invalid key length');
-
-  var kL = utils.readUInt32BE(key, 0);
-  var kR = utils.readUInt32BE(key, 4);
-
-  utils.pc1(kL, kR, state.tmp, 0);
-  kL = state.tmp[0];
-  kR = state.tmp[1];
-  for (var i = 0; i < state.keys.length; i += 2) {
-    var shift = shiftTable[i >>> 1];
-    kL = utils.r28shl(kL, shift);
-    kR = utils.r28shl(kR, shift);
-    utils.pc2(kL, kR, state.keys, i);
-  }
-};
-
-DES.prototype._update = function _update(inp, inOff, out, outOff) {
-  var state = this._desState;
-
-  var l = utils.readUInt32BE(inp, inOff);
-  var r = utils.readUInt32BE(inp, inOff + 4);
-
-  // Initial Permutation
-  utils.ip(l, r, state.tmp, 0);
-  l = state.tmp[0];
-  r = state.tmp[1];
-
-  if (this.type === 'encrypt')
-    this._encrypt(state, l, r, state.tmp, 0);
-  else
-    this._decrypt(state, l, r, state.tmp, 0);
-
-  l = state.tmp[0];
-  r = state.tmp[1];
-
-  utils.writeUInt32BE(out, l, outOff);
-  utils.writeUInt32BE(out, r, outOff + 4);
-};
-
-DES.prototype._pad = function _pad(buffer, off) {
-  if (this.padding === false) {
-    return false;
-  }
-
-  var value = buffer.length - off;
-  for (var i = off; i < buffer.length; i++)
-    buffer[i] = value;
-
-  return true;
-};
-
-DES.prototype._unpad = function _unpad(buffer) {
-  if (this.padding === false) {
-    return buffer;
-  }
-
-  var pad = buffer[buffer.length - 1];
-  for (var i = buffer.length - pad; i < buffer.length; i++)
-    assert.equal(buffer[i], pad);
-
-  return buffer.slice(0, buffer.length - pad);
-};
-
-DES.prototype._encrypt = function _encrypt(state, lStart, rStart, out, off) {
-  var l = lStart;
-  var r = rStart;
-
-  // Apply f() x16 times
-  for (var i = 0; i < state.keys.length; i += 2) {
-    var keyL = state.keys[i];
-    var keyR = state.keys[i + 1];
-
-    // f(r, k)
-    utils.expand(r, state.tmp, 0);
-
-    keyL ^= state.tmp[0];
-    keyR ^= state.tmp[1];
-    var s = utils.substitute(keyL, keyR);
-    var f = utils.permute(s);
-
-    var t = r;
-    r = (l ^ f) >>> 0;
-    l = t;
-  }
-
-  // Reverse Initial Permutation
-  utils.rip(r, l, out, off);
-};
-
-DES.prototype._decrypt = function _decrypt(state, lStart, rStart, out, off) {
-  var l = rStart;
-  var r = lStart;
-
-  // Apply f() x16 times
-  for (var i = state.keys.length - 2; i >= 0; i -= 2) {
-    var keyL = state.keys[i];
-    var keyR = state.keys[i + 1];
-
-    // f(r, k)
-    utils.expand(l, state.tmp, 0);
-
-    keyL ^= state.tmp[0];
-    keyR ^= state.tmp[1];
-    var s = utils.substitute(keyL, keyR);
-    var f = utils.permute(s);
-
-    var t = l;
-    l = (r ^ f) >>> 0;
-    r = t;
-  }
-
-  // Reverse Initial Permutation
-  utils.rip(l, r, out, off);
-};
-
-
-/***/ }),
-
-/***/ 3408:
-/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
-
-"use strict";
-
-
-var assert = __nccwpck_require__(910);
-var inherits = __nccwpck_require__(4124);
-
-var Cipher = __nccwpck_require__(5068);
-var DES = __nccwpck_require__(2957);
-
-function EDEState(type, key) {
-  assert.equal(key.length, 24, 'Invalid key length');
-
-  var k1 = key.slice(0, 8);
-  var k2 = key.slice(8, 16);
-  var k3 = key.slice(16, 24);
-
-  if (type === 'encrypt') {
-    this.ciphers = [
-      DES.create({ type: 'encrypt', key: k1 }),
-      DES.create({ type: 'decrypt', key: k2 }),
-      DES.create({ type: 'encrypt', key: k3 })
-    ];
-  } else {
-    this.ciphers = [
-      DES.create({ type: 'decrypt', key: k3 }),
-      DES.create({ type: 'encrypt', key: k2 }),
-      DES.create({ type: 'decrypt', key: k1 })
-    ];
-  }
-}
-
-function EDE(options) {
-  Cipher.call(this, options);
-
-  var state = new EDEState(this.type, this.options.key);
-  this._edeState = state;
-}
-inherits(EDE, Cipher);
-
-module.exports = EDE;
-
-EDE.create = function create(options) {
-  return new EDE(options);
-};
-
-EDE.prototype._update = function _update(inp, inOff, out, outOff) {
-  var state = this._edeState;
-
-  state.ciphers[0]._update(inp, inOff, out, outOff);
-  state.ciphers[1]._update(out, outOff, out, outOff);
-  state.ciphers[2]._update(out, outOff, out, outOff);
-};
-
-EDE.prototype._pad = DES.prototype._pad;
-EDE.prototype._unpad = DES.prototype._unpad;
-
-
-/***/ }),
-
-/***/ 4171:
-/***/ ((__unused_webpack_module, exports) => {
-
-"use strict";
-
-
-exports.readUInt32BE = function readUInt32BE(bytes, off) {
-  var res =  (bytes[0 + off] << 24) |
-             (bytes[1 + off] << 16) |
-             (bytes[2 + off] << 8) |
-             bytes[3 + off];
-  return res >>> 0;
-};
-
-exports.writeUInt32BE = function writeUInt32BE(bytes, value, off) {
-  bytes[0 + off] = value >>> 24;
-  bytes[1 + off] = (value >>> 16) & 0xff;
-  bytes[2 + off] = (value >>> 8) & 0xff;
-  bytes[3 + off] = value & 0xff;
-};
-
-exports.ip = function ip(inL, inR, out, off) {
-  var outL = 0;
-  var outR = 0;
-
-  for (var i = 6; i >= 0; i -= 2) {
-    for (var j = 0; j <= 24; j += 8) {
-      outL <<= 1;
-      outL |= (inR >>> (j + i)) & 1;
-    }
-    for (var j = 0; j <= 24; j += 8) {
-      outL <<= 1;
-      outL |= (inL >>> (j + i)) & 1;
-    }
-  }
-
-  for (var i = 6; i >= 0; i -= 2) {
-    for (var j = 1; j <= 25; j += 8) {
-      outR <<= 1;
-      outR |= (inR >>> (j + i)) & 1;
-    }
-    for (var j = 1; j <= 25; j += 8) {
-      outR <<= 1;
-      outR |= (inL >>> (j + i)) & 1;
-    }
-  }
-
-  out[off + 0] = outL >>> 0;
-  out[off + 1] = outR >>> 0;
-};
-
-exports.rip = function rip(inL, inR, out, off) {
-  var outL = 0;
-  var outR = 0;
-
-  for (var i = 0; i < 4; i++) {
-    for (var j = 24; j >= 0; j -= 8) {
-      outL <<= 1;
-      outL |= (inR >>> (j + i)) & 1;
-      outL <<= 1;
-      outL |= (inL >>> (j + i)) & 1;
-    }
-  }
-  for (var i = 4; i < 8; i++) {
-    for (var j = 24; j >= 0; j -= 8) {
-      outR <<= 1;
-      outR |= (inR >>> (j + i)) & 1;
-      outR <<= 1;
-      outR |= (inL >>> (j + i)) & 1;
-    }
-  }
-
-  out[off + 0] = outL >>> 0;
-  out[off + 1] = outR >>> 0;
-};
-
-exports.pc1 = function pc1(inL, inR, out, off) {
-  var outL = 0;
-  var outR = 0;
-
-  // 7, 15, 23, 31, 39, 47, 55, 63
-  // 6, 14, 22, 30, 39, 47, 55, 63
-  // 5, 13, 21, 29, 39, 47, 55, 63
-  // 4, 12, 20, 28
-  for (var i = 7; i >= 5; i--) {
-    for (var j = 0; j <= 24; j += 8) {
-      outL <<= 1;
-      outL |= (inR >> (j + i)) & 1;
-    }
-    for (var j = 0; j <= 24; j += 8) {
-      outL <<= 1;
-      outL |= (inL >> (j + i)) & 1;
-    }
-  }
-  for (var j = 0; j <= 24; j += 8) {
-    outL <<= 1;
-    outL |= (inR >> (j + i)) & 1;
-  }
-
-  // 1, 9, 17, 25, 33, 41, 49, 57
-  // 2, 10, 18, 26, 34, 42, 50, 58
-  // 3, 11, 19, 27, 35, 43, 51, 59
-  // 36, 44, 52, 60
-  for (var i = 1; i <= 3; i++) {
-    for (var j = 0; j <= 24; j += 8) {
-      outR <<= 1;
-      outR |= (inR >> (j + i)) & 1;
-    }
-    for (var j = 0; j <= 24; j += 8) {
-      outR <<= 1;
-      outR |= (inL >> (j + i)) & 1;
-    }
-  }
-  for (var j = 0; j <= 24; j += 8) {
-    outR <<= 1;
-    outR |= (inL >> (j + i)) & 1;
-  }
-
-  out[off + 0] = outL >>> 0;
-  out[off + 1] = outR >>> 0;
-};
-
-exports.r28shl = function r28shl(num, shift) {
-  return ((num << shift) & 0xfffffff) | (num >>> (28 - shift));
-};
-
-var pc2table = [
-  // inL => outL
-  14, 11, 17, 4, 27, 23, 25, 0,
-  13, 22, 7, 18, 5, 9, 16, 24,
-  2, 20, 12, 21, 1, 8, 15, 26,
-
-  // inR => outR
-  15, 4, 25, 19, 9, 1, 26, 16,
-  5, 11, 23, 8, 12, 7, 17, 0,
-  22, 3, 10, 14, 6, 20, 27, 24
-];
-
-exports.pc2 = function pc2(inL, inR, out, off) {
-  var outL = 0;
-  var outR = 0;
-
-  var len = pc2table.length >>> 1;
-  for (var i = 0; i < len; i++) {
-    outL <<= 1;
-    outL |= (inL >>> pc2table[i]) & 0x1;
-  }
-  for (var i = len; i < pc2table.length; i++) {
-    outR <<= 1;
-    outR |= (inR >>> pc2table[i]) & 0x1;
-  }
-
-  out[off + 0] = outL >>> 0;
-  out[off + 1] = outR >>> 0;
-};
-
-exports.expand = function expand(r, out, off) {
-  var outL = 0;
-  var outR = 0;
-
-  outL = ((r & 1) << 5) | (r >>> 27);
-  for (var i = 23; i >= 15; i -= 4) {
-    outL <<= 6;
-    outL |= (r >>> i) & 0x3f;
-  }
-  for (var i = 11; i >= 3; i -= 4) {
-    outR |= (r >>> i) & 0x3f;
-    outR <<= 6;
-  }
-  outR |= ((r & 0x1f) << 1) | (r >>> 31);
-
-  out[off + 0] = outL >>> 0;
-  out[off + 1] = outR >>> 0;
-};
-
-var sTable = [
-  14, 0, 4, 15, 13, 7, 1, 4, 2, 14, 15, 2, 11, 13, 8, 1,
-  3, 10, 10, 6, 6, 12, 12, 11, 5, 9, 9, 5, 0, 3, 7, 8,
-  4, 15, 1, 12, 14, 8, 8, 2, 13, 4, 6, 9, 2, 1, 11, 7,
-  15, 5, 12, 11, 9, 3, 7, 14, 3, 10, 10, 0, 5, 6, 0, 13,
-
-  15, 3, 1, 13, 8, 4, 14, 7, 6, 15, 11, 2, 3, 8, 4, 14,
-  9, 12, 7, 0, 2, 1, 13, 10, 12, 6, 0, 9, 5, 11, 10, 5,
-  0, 13, 14, 8, 7, 10, 11, 1, 10, 3, 4, 15, 13, 4, 1, 2,
-  5, 11, 8, 6, 12, 7, 6, 12, 9, 0, 3, 5, 2, 14, 15, 9,
-
-  10, 13, 0, 7, 9, 0, 14, 9, 6, 3, 3, 4, 15, 6, 5, 10,
-  1, 2, 13, 8, 12, 5, 7, 14, 11, 12, 4, 11, 2, 15, 8, 1,
-  13, 1, 6, 10, 4, 13, 9, 0, 8, 6, 15, 9, 3, 8, 0, 7,
-  11, 4, 1, 15, 2, 14, 12, 3, 5, 11, 10, 5, 14, 2, 7, 12,
-
-  7, 13, 13, 8, 14, 11, 3, 5, 0, 6, 6, 15, 9, 0, 10, 3,
-  1, 4, 2, 7, 8, 2, 5, 12, 11, 1, 12, 10, 4, 14, 15, 9,
-  10, 3, 6, 15, 9, 0, 0, 6, 12, 10, 11, 1, 7, 13, 13, 8,
-  15, 9, 1, 4, 3, 5, 14, 11, 5, 12, 2, 7, 8, 2, 4, 14,
-
-  2, 14, 12, 11, 4, 2, 1, 12, 7, 4, 10, 7, 11, 13, 6, 1,
-  8, 5, 5, 0, 3, 15, 15, 10, 13, 3, 0, 9, 14, 8, 9, 6,
-  4, 11, 2, 8, 1, 12, 11, 7, 10, 1, 13, 14, 7, 2, 8, 13,
-  15, 6, 9, 15, 12, 0, 5, 9, 6, 10, 3, 4, 0, 5, 14, 3,
-
-  12, 10, 1, 15, 10, 4, 15, 2, 9, 7, 2, 12, 6, 9, 8, 5,
-  0, 6, 13, 1, 3, 13, 4, 14, 14, 0, 7, 11, 5, 3, 11, 8,
-  9, 4, 14, 3, 15, 2, 5, 12, 2, 9, 8, 5, 12, 15, 3, 10,
-  7, 11, 0, 14, 4, 1, 10, 7, 1, 6, 13, 0, 11, 8, 6, 13,
-
-  4, 13, 11, 0, 2, 11, 14, 7, 15, 4, 0, 9, 8, 1, 13, 10,
-  3, 14, 12, 3, 9, 5, 7, 12, 5, 2, 10, 15, 6, 8, 1, 6,
-  1, 6, 4, 11, 11, 13, 13, 8, 12, 1, 3, 4, 7, 10, 14, 7,
-  10, 9, 15, 5, 6, 0, 8, 15, 0, 14, 5, 2, 9, 3, 2, 12,
-
-  13, 1, 2, 15, 8, 13, 4, 8, 6, 10, 15, 3, 11, 7, 1, 4,
-  10, 12, 9, 5, 3, 6, 14, 11, 5, 0, 0, 14, 12, 9, 7, 2,
-  7, 2, 11, 1, 4, 14, 1, 7, 9, 4, 12, 10, 14, 8, 2, 13,
-  0, 15, 6, 12, 10, 9, 13, 0, 15, 3, 3, 5, 5, 6, 8, 11
-];
-
-exports.substitute = function substitute(inL, inR) {
-  var out = 0;
-  for (var i = 0; i < 4; i++) {
-    var b = (inL >>> (18 - i * 6)) & 0x3f;
-    var sb = sTable[i * 0x40 + b];
-
-    out <<= 4;
-    out |= sb;
-  }
-  for (var i = 0; i < 4; i++) {
-    var b = (inR >>> (18 - i * 6)) & 0x3f;
-    var sb = sTable[4 * 0x40 + i * 0x40 + b];
-
-    out <<= 4;
-    out |= sb;
-  }
-  return out >>> 0;
-};
-
-var permuteTable = [
-  16, 25, 12, 11, 3, 20, 4, 15, 31, 17, 9, 6, 27, 14, 1, 22,
-  30, 24, 8, 18, 0, 5, 29, 23, 13, 19, 2, 26, 10, 21, 28, 7
-];
-
-exports.permute = function permute(num) {
-  var out = 0;
-  for (var i = 0; i < permuteTable.length; i++) {
-    out <<= 1;
-    out |= (num >>> permuteTable[i]) & 0x1;
-  }
-  return out >>> 0;
-};
-
-exports.padSplit = function padSplit(num, size, group) {
-  var str = num.toString(2);
-  while (str.length < size)
-    str = '0' + str;
-
-  var out = [];
-  for (var i = 0; i < size; i += group)
-    out.push(str.slice(i, i + group));
-  return out.join(' ');
-};
-
-
-/***/ }),
-
 /***/ 6123:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
@@ -4198,655 +3476,6 @@ var bind = __nccwpck_require__(8334);
 
 /** @type {import('.')} */
 module.exports = bind.call(call, $hasOwn);
-
-
-/***/ }),
-
-/***/ 4124:
-/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
-
-try {
-  var util = __nccwpck_require__(3837);
-  /* istanbul ignore next */
-  if (typeof util.inherits !== 'function') throw '';
-  module.exports = util.inherits;
-} catch (e) {
-  /* istanbul ignore next */
-  module.exports = __nccwpck_require__(8544);
-}
-
-
-/***/ }),
-
-/***/ 8544:
-/***/ ((module) => {
-
-if (typeof Object.create === 'function') {
-  // implementation from standard node.js 'util' module
-  module.exports = function inherits(ctor, superCtor) {
-    if (superCtor) {
-      ctor.super_ = superCtor
-      ctor.prototype = Object.create(superCtor.prototype, {
-        constructor: {
-          value: ctor,
-          enumerable: false,
-          writable: true,
-          configurable: true
-        }
-      })
-    }
-  };
-} else {
-  // old school shim for old browsers
-  module.exports = function inherits(ctor, superCtor) {
-    if (superCtor) {
-      ctor.super_ = superCtor
-      var TempCtor = function () {}
-      TempCtor.prototype = superCtor.prototype
-      ctor.prototype = new TempCtor()
-      ctor.prototype.constructor = ctor
-    }
-  }
-}
-
-
-/***/ }),
-
-/***/ 561:
-/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
-
-/**
- * [js-md4]{@link https://github.com/emn178/js-md4}
- *
- * @namespace md4
- * @version 0.3.2
- * @author Yi-Cyuan Chen [emn178@gmail.com]
- * @copyright Yi-Cyuan Chen 2015-2027
- * @license MIT
- */
-/*jslint bitwise: true */
-(function () {
-  'use strict';
-
-  var root = typeof window === 'object' ? window : {};
-  var NODE_JS = !root.JS_MD4_NO_NODE_JS && typeof process === 'object' && process.versions && process.versions.node;
-  if (NODE_JS) {
-    root = global;
-  }
-  var COMMON_JS = !root.JS_MD4_NO_COMMON_JS && "object" === 'object' && module.exports;
-  var AMD = typeof define === 'function' && define.amd;
-  var ARRAY_BUFFER = !root.JS_MD4_NO_ARRAY_BUFFER && typeof ArrayBuffer !== 'undefined';
-  var HEX_CHARS = '0123456789abcdef'.split('');
-  var EXTRA = [128, 32768, 8388608, -2147483648];
-  var SHIFT = [0, 8, 16, 24];
-  var OUTPUT_TYPES = ['hex', 'array', 'digest', 'buffer', 'arrayBuffer'];
-
-  var blocks = [], buffer8;
-  if (ARRAY_BUFFER) {
-    var buffer = new ArrayBuffer(68);
-    buffer8 = new Uint8Array(buffer);
-    blocks = new Uint32Array(buffer);
-  }
-
-  /**
-   * @method hex
-   * @memberof md4
-   * @description Output hash as hex string
-   * @param {String|Array|Uint8Array|ArrayBuffer} message message to hash
-   * @returns {String} Hex string
-   * @example
-   * md4.hex('The quick brown fox jumps over the lazy dog');
-   * // equal to
-   * md4('The quick brown fox jumps over the lazy dog');
-   */
-  /**
-   * @method digest
-   * @memberof md4
-   * @description Output hash as bytes array
-   * @param {String|Array|Uint8Array|ArrayBuffer} message message to hash
-   * @returns {Array} Bytes array
-   * @example
-   * md4.digest('The quick brown fox jumps over the lazy dog');
-   */
-  /**
-   * @method array
-   * @memberof md4
-   * @description Output hash as bytes array
-   * @param {String|Array|Uint8Array|ArrayBuffer} message message to hash
-   * @returns {Array} Bytes array
-   * @example
-   * md4.array('The quick brown fox jumps over the lazy dog');
-   */
-  /**
-   * @method buffer
-   * @memberof md4
-   * @description Output hash as ArrayBuffer
-   * @param {String|Array|Uint8Array|ArrayBuffer} message message to hash
-   * @returns {ArrayBuffer} ArrayBuffer
-   * @example
-   * md4.buffer('The quick brown fox jumps over the lazy dog');
-   */
-  var createOutputMethod = function (outputType) {
-    return function(message) {
-      return new Md4(true).update(message)[outputType]();
-    }
-  };
-
-  /**
-   * @method create
-   * @memberof md4
-   * @description Create Md4 object
-   * @returns {Md4} MD4 object.
-   * @example
-   * var hash = md4.create();
-   */
-  /**
-   * @method update
-   * @memberof md4
-   * @description Create and update Md4 object
-   * @param {String|Array|Uint8Array|ArrayBuffer} message message to hash
-   * @returns {Md4} MD4 object.
-   * @example
-   * var hash = md4.update('The quick brown fox jumps over the lazy dog');
-   * // equal to
-   * var hash = md4.create();
-   * hash.update('The quick brown fox jumps over the lazy dog');
-   */
-  var createMethod = function () {
-    var method = createOutputMethod('hex');
-    if (NODE_JS) {
-      method = nodeWrap(method);
-    }
-    method.create = function () {
-      return new Md4();
-    };
-    method.update = function (message) {
-      return method.create().update(message);
-    };
-    for (var i = 0; i < OUTPUT_TYPES.length; ++i) {
-      var type = OUTPUT_TYPES[i];
-      method[type] = createOutputMethod(type);
-    }
-    return method;
-  };
-
-  var nodeWrap = function (method) {
-    var crypto = __nccwpck_require__(6113);
-    var Buffer = (__nccwpck_require__(4300).Buffer);
-    var nodeMethod = function (message) {
-      if (typeof message === 'string') {
-        return crypto.createHash('md4').update(message, 'utf8').digest('hex');
-      } else if (ARRAY_BUFFER && message instanceof ArrayBuffer) {
-        message = new Uint8Array(message);
-      } else if (message.length === undefined) {
-        return method(message);
-      }
-      return crypto.createHash('md4').update(new Buffer(message)).digest('hex');
-    };
-    return nodeMethod;
-  };
-
-  /**
-   * Md4 class
-   * @class Md4
-   * @description This is internal class.
-   * @see {@link md4.create}
-   */
-  function Md4(sharedMemory) {
-    if (sharedMemory) {
-      blocks[0] = blocks[16] = blocks[1] = blocks[2] = blocks[3] =
-      blocks[4] = blocks[5] = blocks[6] = blocks[7] =
-      blocks[8] = blocks[9] = blocks[10] = blocks[11] =
-      blocks[12] = blocks[13] = blocks[14] = blocks[15] = 0;
-      this.blocks = blocks;
-      this.buffer8 = buffer8;
-    } else {
-      if (ARRAY_BUFFER) {
-        var buffer = new ArrayBuffer(68);
-        this.buffer8 = new Uint8Array(buffer);
-        this.blocks = new Uint32Array(buffer);
-      } else {
-        this.blocks = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
-      }
-    }
-    this.h0 = this.h1 = this.h2 = this.h3 = this.start = this.bytes = 0;
-    this.finalized = this.hashed = false;
-    this.first = true;
-  }
-
-  /**
-   * @method update
-   * @memberof Md4
-   * @instance
-   * @description Update hash
-   * @param {String|Array|Uint8Array|ArrayBuffer} message message to hash
-   * @returns {Md4} MD4 object.
-   * @see {@link md4.update}
-   */
-  Md4.prototype.update = function (message) {
-    if (this.finalized) {
-      return;
-    }
-    var notString = typeof message !== 'string';
-    if (notString && ARRAY_BUFFER && message instanceof ArrayBuffer) {
-      message = new Uint8Array(message);
-    }
-    var code, index = 0, i, length = message.length || 0, blocks = this.blocks;
-    var buffer8 = this.buffer8;
-
-    while (index < length) {
-      if (this.hashed) {
-        this.hashed = false;
-        blocks[0] = blocks[16];
-        blocks[16] = blocks[1] = blocks[2] = blocks[3] =
-        blocks[4] = blocks[5] = blocks[6] = blocks[7] =
-        blocks[8] = blocks[9] = blocks[10] = blocks[11] =
-        blocks[12] = blocks[13] = blocks[14] = blocks[15] = 0;
-      }
-
-      if (notString) {
-        if (ARRAY_BUFFER) {
-          for (i = this.start; index < length && i < 64; ++index) {
-            buffer8[i++] = message[index];
-          }
-        } else {
-          for (i = this.start; index < length && i < 64; ++index) {
-            blocks[i >> 2] |= message[index] << SHIFT[i++ & 3];
-          }
-        }
-      } else {
-        if (ARRAY_BUFFER) {
-          for (i = this.start; index < length && i < 64; ++index) {
-            code = message.charCodeAt(index);
-            if (code < 0x80) {
-              buffer8[i++] = code;
-            } else if (code < 0x800) {
-              buffer8[i++] = 0xc0 | (code >> 6);
-              buffer8[i++] = 0x80 | (code & 0x3f);
-            } else if (code < 0xd800 || code >= 0xe000) {
-              buffer8[i++] = 0xe0 | (code >> 12);
-              buffer8[i++] = 0x80 | ((code >> 6) & 0x3f);
-              buffer8[i++] = 0x80 | (code & 0x3f);
-            } else {
-              code = 0x10000 + (((code & 0x3ff) << 10) | (message.charCodeAt(++index) & 0x3ff));
-              buffer8[i++] = 0xf0 | (code >> 18);
-              buffer8[i++] = 0x80 | ((code >> 12) & 0x3f);
-              buffer8[i++] = 0x80 | ((code >> 6) & 0x3f);
-              buffer8[i++] = 0x80 | (code & 0x3f);
-            }
-          }
-        } else {
-          for (i = this.start; index < length && i < 64; ++index) {
-            code = message.charCodeAt(index);
-            if (code < 0x80) {
-              blocks[i >> 2] |= code << SHIFT[i++ & 3];
-            } else if (code < 0x800) {
-              blocks[i >> 2] |= (0xc0 | (code >> 6)) << SHIFT[i++ & 3];
-              blocks[i >> 2] |= (0x80 | (code & 0x3f)) << SHIFT[i++ & 3];
-            } else if (code < 0xd800 || code >= 0xe000) {
-              blocks[i >> 2] |= (0xe0 | (code >> 12)) << SHIFT[i++ & 3];
-              blocks[i >> 2] |= (0x80 | ((code >> 6) & 0x3f)) << SHIFT[i++ & 3];
-              blocks[i >> 2] |= (0x80 | (code & 0x3f)) << SHIFT[i++ & 3];
-            } else {
-              code = 0x10000 + (((code & 0x3ff) << 10) | (message.charCodeAt(++index) & 0x3ff));
-              blocks[i >> 2] |= (0xf0 | (code >> 18)) << SHIFT[i++ & 3];
-              blocks[i >> 2] |= (0x80 | ((code >> 12) & 0x3f)) << SHIFT[i++ & 3];
-              blocks[i >> 2] |= (0x80 | ((code >> 6) & 0x3f)) << SHIFT[i++ & 3];
-              blocks[i >> 2] |= (0x80 | (code & 0x3f)) << SHIFT[i++ & 3];
-            }
-          }
-        }
-      }
-      this.lastByteIndex = i;
-      this.bytes += i - this.start;
-      if (i >= 64) {
-        this.start = i - 64;
-        this.hash();
-        this.hashed = true;
-      } else {
-        this.start = i;
-      }
-    }
-    return this;
-  };
-
-  Md4.prototype.finalize = function () {
-    if (this.finalized) {
-      return;
-    }
-    this.finalized = true;
-    var blocks = this.blocks, i = this.lastByteIndex;
-    blocks[i >> 2] |= EXTRA[i & 3];
-    if (i >= 56) {
-      if (!this.hashed) {
-        this.hash();
-      }
-      blocks[0] = blocks[16];
-      blocks[16] = blocks[1] = blocks[2] = blocks[3] =
-      blocks[4] = blocks[5] = blocks[6] = blocks[7] =
-      blocks[8] = blocks[9] = blocks[10] = blocks[11] =
-      blocks[12] = blocks[13] = blocks[14] = blocks[15] = 0;
-    }
-    blocks[14] = this.bytes << 3;
-    this.hash();
-  };
-
-  Md4.prototype.hash = function () {
-    var a, b, c, d, ab, bc, cd, da, blocks = this.blocks;
-
-    if (this.first) {
-      a = blocks[0] - 1;
-      a = (a << 3) | (a >>> 29);
-      d = ((a & 0xefcdab89) | (~a & 0x98badcfe)) + blocks[1] + 271733878;
-      d = (d << 7) | (d >>> 25);
-      c = ((d & a) | (~d & 0xefcdab89)) + blocks[2] - 1732584194;
-      c = (c << 11) | (c >>> 21);
-      b = ((c & d) | (~c & a)) + blocks[3] - 271733879;
-      b = (b << 19) | (b >>> 13);
-    } else {
-      a = this.h0;
-      b = this.h1;
-      c = this.h2;
-      d = this.h3;
-      a += ((b & c) | (~b & d)) + blocks[0];
-      a = (a << 3) | (a >>> 29);
-      d += ((a & b) | (~a & c)) + blocks[1];
-      d = (d << 7) | (d >>> 25);
-      c += ((d & a) | (~d & b)) + blocks[2];
-      c = (c << 11) | (c >>> 21);
-      b += ((c & d) | (~c & a)) + blocks[3];
-      b = (b << 19) | (b >>> 13);
-    }
-    a += ((b & c) | (~b & d)) + blocks[4];
-    a = (a << 3) | (a >>> 29);
-    d += ((a & b) | (~a & c)) + blocks[5];
-    d = (d << 7) | (d >>> 25);
-    c += ((d & a) | (~d & b)) + blocks[6];
-    c = (c << 11) | (c >>> 21);
-    b += ((c & d) | (~c & a)) + blocks[7];
-    b = (b << 19) | (b >>> 13);
-    a += ((b & c) | (~b & d)) + blocks[8];
-    a = (a << 3) | (a >>> 29);
-    d += ((a & b) | (~a & c)) + blocks[9];
-    d = (d << 7) | (d >>> 25);
-    c += ((d & a) | (~d & b)) + blocks[10];
-    c = (c << 11) | (c >>> 21);
-    b += ((c & d) | (~c & a)) + blocks[11];
-    b = (b << 19) | (b >>> 13);
-    a += ((b & c) | (~b & d)) + blocks[12];
-    a = (a << 3) | (a >>> 29);
-    d += ((a & b) | (~a & c)) + blocks[13];
-    d = (d << 7) | (d >>> 25);
-    c += ((d & a) | (~d & b)) + blocks[14];
-    c = (c << 11) | (c >>> 21);
-    b += ((c & d) | (~c & a)) + blocks[15];
-    b = (b << 19) | (b >>> 13);
-
-    bc = b & c;
-    a += (bc | (b & d) | (c & d)) + blocks[0] + 1518500249;
-    a = (a << 3) | (a >>> 29);
-    ab = a & b;
-    d += (ab | (a & c) | bc) + blocks[4] + 1518500249;
-    d = (d << 5) | (d >>> 27);
-    da = d & a;
-    c += (da | (d & b) | ab) + blocks[8] + 1518500249;
-    c = (c << 9) | (c >>> 23);
-    cd = c & d;
-    b += (cd | (c & a) | da) + blocks[12] + 1518500249;
-    b = (b << 13) | (b >>> 19);
-    bc = b & c;
-    a += (bc | (b & d) | cd) + blocks[1] + 1518500249;
-    a = (a << 3) | (a >>> 29);
-    ab = a & b;
-    d += (ab | (a & c) | bc) + blocks[5] + 1518500249;
-    d = (d << 5) | (d >>> 27);
-    da = d & a;
-    c += (da | (d & b) | ab) + blocks[9] + 1518500249;
-    c = (c << 9) | (c >>> 23);
-    cd = c & d;
-    b += (cd | (c & a) | da) + blocks[13] + 1518500249;
-    b = (b << 13) | (b >>> 19);
-    bc = b & c;
-    a += (bc | (b & d) | cd) + blocks[2] + 1518500249;
-    a = (a << 3) | (a >>> 29);
-    ab = a & b;
-    d += (ab | (a & c) | bc) + blocks[6] + 1518500249;
-    d = (d << 5) | (d >>> 27);
-    da = d & a;
-    c += (da | (d & b) | ab) + blocks[10] + 1518500249;
-    c = (c << 9) | (c >>> 23);
-    cd = c & d;
-    b += (cd | (c & a) | da) + blocks[14] + 1518500249;
-    b = (b << 13) | (b >>> 19);
-    bc = b & c;
-    a += (bc | (b & d) | cd) + blocks[3] + 1518500249;
-    a = (a << 3) | (a >>> 29);
-    ab = a & b;
-    d += (ab | (a & c) | bc) + blocks[7] + 1518500249;
-    d = (d << 5) | (d >>> 27);
-    da = d & a;
-    c += (da | (d & b) | ab) + blocks[11] + 1518500249;
-    c = (c << 9) | (c >>> 23);
-    b += ((c & d) | (c & a) | da) + blocks[15] + 1518500249;
-    b = (b << 13) | (b >>> 19);
-
-    bc = b ^ c;
-    a += (bc ^ d) + blocks[0] + 1859775393;
-    a = (a << 3) | (a >>> 29);
-    d += (bc ^ a) + blocks[8] + 1859775393;
-    d = (d << 9) | (d >>> 23);
-    da = d ^ a;
-    c += (da ^ b) + blocks[4] + 1859775393;
-    c = (c << 11) | (c >>> 21);
-    b += (da ^ c) + blocks[12] + 1859775393;
-    b = (b << 15) | (b >>> 17);
-    bc = b ^ c;
-    a += (bc ^ d) + blocks[2] + 1859775393;
-    a = (a << 3) | (a >>> 29);
-    d += (bc ^ a) + blocks[10] + 1859775393;
-    d = (d << 9) | (d >>> 23);
-    da = d ^ a;
-    c += (da ^ b) + blocks[6] + 1859775393;
-    c = (c << 11) | (c >>> 21);
-    b += (da ^ c) + blocks[14] + 1859775393;
-    b = (b << 15) | (b >>> 17);
-    bc = b ^ c;
-    a += (bc ^ d) + blocks[1] + 1859775393;
-    a = (a << 3) | (a >>> 29);
-    d += (bc ^ a) + blocks[9] + 1859775393;
-    d = (d << 9) | (d >>> 23);
-    da = d ^ a;
-    c += (da ^ b) + blocks[5] + 1859775393;
-    c = (c << 11) | (c >>> 21);
-    b += (da ^ c) + blocks[13] + 1859775393;
-    b = (b << 15) | (b >>> 17);
-    bc = b ^ c;
-    a += (bc ^ d) + blocks[3] + 1859775393;
-    a = (a << 3) | (a >>> 29);
-    d += (bc ^ a) + blocks[11] + 1859775393;
-    d = (d << 9) | (d >>> 23);
-    da = d ^ a;
-    c += (da ^ b) + blocks[7] + 1859775393;
-    c = (c << 11) | (c >>> 21);
-    b += (da ^ c) + blocks[15] + 1859775393;
-    b = (b << 15) | (b >>> 17);
-
-    if (this.first) {
-      this.h0 = a + 1732584193 << 0;
-      this.h1 = b - 271733879 << 0;
-      this.h2 = c - 1732584194 << 0;
-      this.h3 = d + 271733878 << 0;
-      this.first = false;
-    } else {
-      this.h0 = this.h0 + a << 0;
-      this.h1 = this.h1 + b << 0;
-      this.h2 = this.h2 + c << 0;
-      this.h3 = this.h3 + d << 0;
-    }
-  };
-
-  /**
-   * @method hex
-   * @memberof Md4
-   * @instance
-   * @description Output hash as hex string
-   * @returns {String} Hex string
-   * @see {@link md4.hex}
-   * @example
-   * hash.hex();
-   */
-  Md4.prototype.hex = function () {
-    this.finalize();
-
-    var h0 = this.h0, h1 = this.h1, h2 = this.h2, h3 = this.h3;
-
-    return HEX_CHARS[(h0 >> 4) & 0x0F] + HEX_CHARS[h0 & 0x0F] +
-      HEX_CHARS[(h0 >> 12) & 0x0F] + HEX_CHARS[(h0 >> 8) & 0x0F] +
-      HEX_CHARS[(h0 >> 20) & 0x0F] + HEX_CHARS[(h0 >> 16) & 0x0F] +
-      HEX_CHARS[(h0 >> 28) & 0x0F] + HEX_CHARS[(h0 >> 24) & 0x0F] +
-      HEX_CHARS[(h1 >> 4) & 0x0F] + HEX_CHARS[h1 & 0x0F] +
-      HEX_CHARS[(h1 >> 12) & 0x0F] + HEX_CHARS[(h1 >> 8) & 0x0F] +
-      HEX_CHARS[(h1 >> 20) & 0x0F] + HEX_CHARS[(h1 >> 16) & 0x0F] +
-      HEX_CHARS[(h1 >> 28) & 0x0F] + HEX_CHARS[(h1 >> 24) & 0x0F] +
-      HEX_CHARS[(h2 >> 4) & 0x0F] + HEX_CHARS[h2 & 0x0F] +
-      HEX_CHARS[(h2 >> 12) & 0x0F] + HEX_CHARS[(h2 >> 8) & 0x0F] +
-      HEX_CHARS[(h2 >> 20) & 0x0F] + HEX_CHARS[(h2 >> 16) & 0x0F] +
-      HEX_CHARS[(h2 >> 28) & 0x0F] + HEX_CHARS[(h2 >> 24) & 0x0F] +
-      HEX_CHARS[(h3 >> 4) & 0x0F] + HEX_CHARS[h3 & 0x0F] +
-      HEX_CHARS[(h3 >> 12) & 0x0F] + HEX_CHARS[(h3 >> 8) & 0x0F] +
-      HEX_CHARS[(h3 >> 20) & 0x0F] + HEX_CHARS[(h3 >> 16) & 0x0F] +
-      HEX_CHARS[(h3 >> 28) & 0x0F] + HEX_CHARS[(h3 >> 24) & 0x0F];
-  };
-
-  /**
-   * @method toString
-   * @memberof Md4
-   * @instance
-   * @description Output hash as hex string
-   * @returns {String} Hex string
-   * @see {@link md4.hex}
-   * @example
-   * hash.toString();
-   */
-  Md4.prototype.toString = Md4.prototype.hex;
-
-  /**
-   * @method digest
-   * @memberof Md4
-   * @instance
-   * @description Output hash as bytes array
-   * @returns {Array} Bytes array
-   * @see {@link md4.digest}
-   * @example
-   * hash.digest();
-   */
-  Md4.prototype.digest = function() {
-    this.finalize();
-
-    var h0 = this.h0, h1 = this.h1, h2 = this.h2, h3 = this.h3;
-    return [
-      h0 & 0xFF, (h0 >> 8) & 0xFF, (h0 >> 16) & 0xFF, (h0 >> 24) & 0xFF,
-      h1 & 0xFF, (h1 >> 8) & 0xFF, (h1 >> 16) & 0xFF, (h1 >> 24) & 0xFF,
-      h2 & 0xFF, (h2 >> 8) & 0xFF, (h2 >> 16) & 0xFF, (h2 >> 24) & 0xFF,
-      h3 & 0xFF, (h3 >> 8) & 0xFF, (h3 >> 16) & 0xFF, (h3 >> 24) & 0xFF
-    ];
-  };
-
-  /**
-   * @method array
-   * @memberof Md4
-   * @instance
-   * @description Output hash as bytes array
-   * @returns {Array} Bytes array
-   * @see {@link md4.array}
-   * @example
-   * hash.array();
-   */
-  Md4.prototype.array = Md4.prototype.digest;
-
-  /**
-   * @method arrayBuffer
-   * @memberof Md4
-   * @instance
-   * @description Output hash as ArrayBuffer
-   * @returns {ArrayBuffer} ArrayBuffer
-   * @see {@link md4.arrayBuffer}
-   * @example
-   * hash.arrayBuffer();
-   */
-  Md4.prototype.arrayBuffer = function() {
-    this.finalize();
-
-    var buffer = new ArrayBuffer(16);
-    var blocks = new Uint32Array(buffer);
-    blocks[0] = this.h0;
-    blocks[1] = this.h1;
-    blocks[2] = this.h2;
-    blocks[3] = this.h3;
-    return buffer;
-  };
-
-  /**
-   * @method buffer
-   * @deprecated This maybe confuse with Buffer in node.js. Please use arrayBuffer instead.
-   * @memberof Md4
-   * @instance
-   * @description Output hash as ArrayBuffer
-   * @returns {ArrayBuffer} ArrayBuffer
-   * @see {@link md4.buffer}
-   * @example
-   * hash.buffer();
-   */
-  Md4.prototype.buffer = Md4.prototype.arrayBuffer;
-
-  var exports = createMethod();
-
-  if (COMMON_JS) {
-    module.exports = exports;
-  } else {
-    /**
-     * @method md4
-     * @description MD4 hash function, export to global in browsers.
-     * @param {String|Array|Uint8Array|ArrayBuffer} message message to hash
-     * @returns {String} md4 hashes
-     * @example
-     * md4(''); // 31d6cfe0d16ae931b73c59d7e0c089c0
-     * md4('The quick brown fox jumps over the lazy dog'); // 1bee69a46ba811185c194762abaeae90
-     * md4('The quick brown fox jumps over the lazy dog.'); // 2812c6c7136898c51f6f6739ad08750e
-     *
-     * // It also supports UTF-8 encoding
-     * md4('中文'); // 223088bf7bd45a16436b15360c5fc5a0
-     *
-     * // It also supports byte `Array`, `Uint8Array`, `ArrayBuffer`
-     * md4([]); // 31d6cfe0d16ae931b73c59d7e0c089c0
-     * md4(new Uint8Array([])); // 31d6cfe0d16ae931b73c59d7e0c089c0
-     */
-    root.md4 = exports;
-    if (AMD) {
-      define(function () {
-        return exports;
-      });
-    }
-  }
-})();
-
-
-/***/ }),
-
-/***/ 910:
-/***/ ((module) => {
-
-module.exports = assert;
-
-function assert(val, msg) {
-  if (!val)
-    throw new Error(msg || 'Assertion failed');
-}
-
-assert.equal = function assertEqual(l, r, msg) {
-  if (l != r)
-    throw new Error(msg || ('Assertion failed: ' + l + ' != ' + r));
-};
 
 
 /***/ }),
@@ -8394,15 +7023,14 @@ exports.debug = debug; // for test
 "use strict";
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.PersonalAccessTokenCredentialHandler = exports.NtlmCredentialHandler = exports.BearerCredentialHandler = exports.BasicCredentialHandler = void 0;
 var basiccreds_1 = __nccwpck_require__(7954);
-Object.defineProperty(exports, "BasicCredentialHandler", ({ enumerable: true, get: function () { return basiccreds_1.BasicCredentialHandler; } }));
+exports.BasicCredentialHandler = basiccreds_1.BasicCredentialHandler;
 var bearertoken_1 = __nccwpck_require__(7431);
-Object.defineProperty(exports, "BearerCredentialHandler", ({ enumerable: true, get: function () { return bearertoken_1.BearerCredentialHandler; } }));
+exports.BearerCredentialHandler = bearertoken_1.BearerCredentialHandler;
 var ntlm_1 = __nccwpck_require__(4157);
-Object.defineProperty(exports, "NtlmCredentialHandler", ({ enumerable: true, get: function () { return ntlm_1.NtlmCredentialHandler; } }));
+exports.NtlmCredentialHandler = ntlm_1.NtlmCredentialHandler;
 var personalaccesstoken_1 = __nccwpck_require__(7799);
-Object.defineProperty(exports, "PersonalAccessTokenCredentialHandler", ({ enumerable: true, get: function () { return personalaccesstoken_1.PersonalAccessTokenCredentialHandler; } }));
+exports.PersonalAccessTokenCredentialHandler = personalaccesstoken_1.PersonalAccessTokenCredentialHandler;
 
 
 /***/ }),
@@ -8415,16 +7043,14 @@ Object.defineProperty(exports, "PersonalAccessTokenCredentialHandler", ({ enumer
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
         function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.HttpClient = exports.isHttps = exports.HttpClientResponse = exports.HttpCodes = void 0;
 const url = __nccwpck_require__(7310);
 const http = __nccwpck_require__(3685);
 const https = __nccwpck_require__(5687);
@@ -8460,7 +7086,7 @@ var HttpCodes;
     HttpCodes[HttpCodes["BadGateway"] = 502] = "BadGateway";
     HttpCodes[HttpCodes["ServiceUnavailable"] = 503] = "ServiceUnavailable";
     HttpCodes[HttpCodes["GatewayTimeout"] = 504] = "GatewayTimeout";
-})(HttpCodes || (exports.HttpCodes = HttpCodes = {}));
+})(HttpCodes = exports.HttpCodes || (exports.HttpCodes = {}));
 const HttpRedirectCodes = [HttpCodes.MovedPermanently, HttpCodes.ResourceMoved, HttpCodes.SeeOther, HttpCodes.TemporaryRedirect, HttpCodes.PermanentRedirect];
 const HttpResponseRetryCodes = [HttpCodes.BadGateway, HttpCodes.ServiceUnavailable, HttpCodes.GatewayTimeout];
 const NetworkRetryErrors = ['ECONNRESET', 'ENOTFOUND', 'ESOCKETTIMEDOUT', 'ETIMEDOUT', 'ECONNREFUSED'];
@@ -8927,16 +7553,14 @@ exports.HttpClient = HttpClient;
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
         function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.obtainContentCharset = exports.buildProxyBypassRegexFromEnv = exports.decompressGzippedContent = exports.getUrl = void 0;
 const qs = __nccwpck_require__(2760);
 const url = __nccwpck_require__(7310);
 const path = __nccwpck_require__(1017);
@@ -9065,10 +7689,7 @@ function obtainContentCharset(response) {
     const nodeSupportedEncodings = ['ascii', 'utf8', 'utf16le', 'ucs2', 'base64', 'binary', 'hex'];
     const contentType = response.message.headers['content-type'] || '';
     const matches = contentType.match(/charset=([^;,\r\n]+)/i);
-    if (matches && matches[1] && nodeSupportedEncodings.indexOf(matches[1]) != -1) {
-        return matches[1];
-    }
-    return 'utf-8';
+    return (matches && matches[1] && nodeSupportedEncodings.indexOf(matches[1]) != -1) ? matches[1] : 'utf-8';
 }
 exports.obtainContentCharset = obtainContentCharset;
 
@@ -9083,7 +7704,6 @@ exports.obtainContentCharset = obtainContentCharset;
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.BasicCredentialHandler = void 0;
 class BasicCredentialHandler {
     constructor(username, password, allowCrossOriginAuthentication) {
         this.username = username;
@@ -9123,7 +7743,6 @@ exports.BasicCredentialHandler = BasicCredentialHandler;
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.BearerCredentialHandler = void 0;
 class BearerCredentialHandler {
     constructor(token, allowCrossOriginAuthentication) {
         this.token = token;
@@ -9162,7 +7781,6 @@ exports.BearerCredentialHandler = BearerCredentialHandler;
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.NtlmCredentialHandler = void 0;
 const http = __nccwpck_require__(3685);
 const https = __nccwpck_require__(5687);
 const _ = __nccwpck_require__(5067);
@@ -9196,7 +7814,6 @@ class NtlmCredentialHandler {
             const callbackForResult = function (err, res) {
                 if (err) {
                     reject(err);
-                    return;
                 }
                 // We have to readbody on the response before continuing otherwise there is a hang.
                 res.readBody().then(() => {
@@ -9309,7 +7926,6 @@ exports.NtlmCredentialHandler = NtlmCredentialHandler;
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.PersonalAccessTokenCredentialHandler = void 0;
 class PersonalAccessTokenCredentialHandler {
     constructor(token, allowCrossOriginAuthentication) {
         this.token = token;
@@ -9375,7 +7991,7 @@ function oddpar(buf)
  */
 function expandkey(key56)
 {
-  var key64 = Buffer.alloc(8);
+  var key64 = new Buffer(8);
 
   key64[0] = key56[0] & 0xFE;
   key64[1] = ((key56[0] << 7) & 0xFF) | (key56[1] >> 1);
@@ -9394,7 +8010,7 @@ function expandkey(key56)
  */
 function bintohex(bin)
 {
-  var buf = (Buffer.isBuffer(buf) ? buf : Buffer.from(bin, 'binary'));
+  var buf = (Buffer.isBuffer(buf) ? buf : new Buffer(bin, 'binary'));
   var str = buf.toString('hex').toUpperCase();
   return zeroextend(str, 32);
 }
@@ -9417,7 +8033,6 @@ var $ = __nccwpck_require__(2352);
 var lmhashbuf = (__nccwpck_require__(8657).lmhashbuf);
 var nthashbuf = (__nccwpck_require__(8657).nthashbuf);
 
-var desjs = __nccwpck_require__(8743);
 
 function encodeType1(hostname, ntdomain) {
   hostname = hostname.toUpperCase();
@@ -9426,7 +8041,7 @@ function encodeType1(hostname, ntdomain) {
   var ntdomainlen = Buffer.byteLength(ntdomain, 'ascii');
 
   var pos = 0;
-  var buf = Buffer.alloc(32 + hostnamelen + ntdomainlen);
+  var buf = new Buffer(32 + hostnamelen + ntdomainlen);
 
   buf.write('NTLMSSP', pos, 7, 'ascii'); // byte protocol[8];
   pos += 7;
@@ -9500,10 +8115,10 @@ function encodeType3(username, hostname, ntdomain, nonce, password) {
   hostname = hostname.toUpperCase();
   ntdomain = ntdomain.toUpperCase();
 
-  var lmh = Buffer.alloc(21);
+  var lmh = new Buffer(21);
   lmhashbuf(password).copy(lmh);
   lmh.fill(0x00, 16); // null pad to 21 bytes
-  var nth = Buffer.alloc(21);
+  var nth = new Buffer(21);
   nthashbuf(password).copy(nth);
   nth.fill(0x00, 16); // null pad to 21 bytes
 
@@ -9524,7 +8139,7 @@ function encodeType3(username, hostname, ntdomain, nonce, password) {
 
   var pos = 0;
   var msg_len = 64 + ntdomainlen + usernamelen + hostnamelen + lmrlen + ntrlen;
-  var buf = Buffer.alloc(msg_len);
+  var buf = new Buffer(msg_len);
 
   buf.write('NTLMSSP', pos, 7, 'ascii'); // byte protocol[8];
   pos += 7;
@@ -9603,17 +8218,12 @@ function encodeType3(username, hostname, ntdomain, nonce, password) {
 
 function makeResponse(hash, nonce)
 {
-  var out = Buffer.alloc(24);
-
+  var out = new Buffer(24);
   for (var i = 0; i < 3; i++) {
     var keybuf = $.oddpar($.expandkey(hash.slice(i * 7, i * 7 + 7)));
-
-    var des = desjs.DES.create({type: 'encrypt', key: keybuf});
-    var magicKey = Buffer.from(nonce.toString('binary'));
-    var insertBuff = Buffer.from(des.update(magicKey));
-
-    out.fill(insertBuff, i * 8, i * 8 + 8, 'binary');
-    
+    var des = crypto.createCipheriv('DES-ECB', keybuf, '');
+    var str = des.update(nonce.toString('binary'), 'binary', 'binary');
+    out.write(str, i * 8, i * 8 + 8, 'binary');
   }
   return out;
 }
@@ -9629,7 +8239,7 @@ exports.challengeHeader = function (hostname, domain) {
 };
 
 exports.responseHeader = function (res, url, domain, username, password) {
-  var serverNonce = Buffer.from((res.headers['www-authenticate'].match(/^NTLM\s+(.+?)(,|\s+|$)/) || [])[1], 'base64');
+  var serverNonce = new Buffer((res.headers['www-authenticate'].match(/^NTLM\s+(.+?)(,|\s+|$)/) || [])[1], 'base64');
   var hostname = (__nccwpck_require__(7310).parse)(url).hostname;
   return 'NTLM ' + exports.encodeType3(username, hostname, domain, exports.decodeType2(serverNonce), password).toString('base64')
 };
@@ -9644,10 +8254,8 @@ exports.smbhash = __nccwpck_require__(8657);
 /***/ 8657:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
+var crypto = __nccwpck_require__(6113);
 var $ = __nccwpck_require__(2352);
-
-var jsmd4 = __nccwpck_require__(561);
-var desjs = __nccwpck_require__(8743);
 
 /*
  * Generate the LM Hash
@@ -9659,7 +8267,7 @@ function lmhashbuf(inputstr)
   var xl = Buffer.byteLength(x, 'ascii');
 
   /* null pad to 14 bytes */
-  var y = Buffer.alloc(14);
+  var y = new Buffer(14);
   y.write(x, 0, xl, 'ascii');
   y.fill(0, xl);
 
@@ -9672,13 +8280,12 @@ function lmhashbuf(inputstr)
   /* DES encrypt magic number "KGS!@#$%" to two
    * 8-byte ciphertexts, (ECB, no padding)
    */
-  var buf = Buffer.alloc(16);
+  var buf = new Buffer(16);
   var pos = 0;
   var cts = halves.forEach(function(z) {
-    var des = desjs.DES.create({type: 'encrypt', key: z});
-    var magicKey = Buffer.from('KGS!@#$%', 'ascii');
-    var insertBuff = Buffer.from(des.update(magicKey));
-    buf.fill(insertBuff, pos, pos + 8, 'binary');
+    var des = crypto.createCipheriv('DES-ECB', z, '');
+    var str = des.update('KGS!@#$%', 'binary', 'binary');
+    buf.write(str, pos, pos + 8, 'binary');
     pos += 8;
   });
 
@@ -9690,10 +8297,10 @@ function lmhashbuf(inputstr)
 function nthashbuf(str)
 {
   /* take MD4 hash of UCS-2 encoded password */
-  var ucs2 = Buffer.from(str, 'ucs2');
-  var md4 = jsmd4.create();
+  var ucs2 = new Buffer(str, 'ucs2');
+  var md4 = crypto.createHash('md4');
   md4.update(ucs2);
-  return Buffer.from(md4.digest('binary'), 'binary');
+  return new Buffer(md4.digest('binary'), 'binary');
 }
 
 function lmhash(is)
@@ -32550,7 +31157,7 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.getInputs = getInputs;
+exports.getInputs = void 0;
 const core = __importStar(__nccwpck_require__(2186));
 const path = __importStar(__nccwpck_require__(1017));
 function validateRepositoryPath(repositoryPath) {
@@ -32587,9 +31194,11 @@ function getInputs() {
         tarBall: core.getBooleanInput('tarBall'),
         zipBall: core.getBooleanInput('zipBall'),
         extractAssets: core.getBooleanInput('extract'),
-        outFilePath: path.resolve(githubWorkspacePath, core.getInput('out-file-path') || '.')
+        outFilePath: path.resolve(githubWorkspacePath, core.getInput('out-file-path') || '.'),
+        addToPathEnvironmentVariable: core.getBooleanInput('addToPath')
     };
 }
+exports.getInputs = getInputs;
 
 
 /***/ }),
@@ -32627,6 +31236,8 @@ const core = __importStar(__nccwpck_require__(2186));
 const handlers = __importStar(__nccwpck_require__(4442));
 const inputHelper = __importStar(__nccwpck_require__(6455));
 const thc = __importStar(__nccwpck_require__(5538));
+const node_fs_1 = __nccwpck_require__(7561);
+const node_path_1 = __nccwpck_require__(9411);
 const release_downloader_1 = __nccwpck_require__(785);
 const unarchive_1 = __nccwpck_require__(8512);
 async function run() {
@@ -32644,6 +31255,30 @@ async function run() {
             for (const asset of res) {
                 await (0, unarchive_1.extract)(asset, downloadSettings.outFilePath);
             }
+        }
+        if (downloadSettings.addToPathEnvironmentVariable) {
+            const out = downloadSettings.outFilePath;
+            // Make executables executable
+            for (const file of (0, node_fs_1.readdirSync)(out)) {
+                let full = (0, node_path_1.join)(out, file);
+                if ((0, node_fs_1.statSync)(full).isFile()) {
+                    const toSliceTo = /-(v?)[0-9]/.exec(file);
+                    if (toSliceTo) {
+                        const old = full;
+                        full = (0, node_path_1.join)(out, file.slice(0, toSliceTo.index));
+                        (0, node_fs_1.renameSync)(old, full);
+                        core.debug(`Renamed ${old} to ${full}`);
+                    }
+                    const newMode = (0, node_fs_1.statSync)(full).mode |
+                        node_fs_1.constants.S_IXUSR |
+                        node_fs_1.constants.S_IXGRP |
+                        node_fs_1.constants.S_IXOTH;
+                    (0, node_fs_1.chmodSync)(full, newMode);
+                    core.info(`Made ${full} executable`);
+                }
+            }
+            core.addPath(out);
+            core.info(`Added ${out} to PATH`);
         }
         core.info(`Done: ${res}`);
     }
@@ -33101,14 +31736,6 @@ module.exports = require("node:path");
 
 "use strict";
 module.exports = require("node:stream");
-
-/***/ }),
-
-/***/ 6915:
-/***/ ((module) => {
-
-"use strict";
-module.exports = require("node:string_decoder");
 
 /***/ }),
 
@@ -39817,11 +38444,36 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.create = void 0;
+const options_js_1 = __nccwpck_require__(9060);
 const fs_minipass_1 = __nccwpck_require__(675);
 const node_path_1 = __importDefault(__nccwpck_require__(9411));
 const list_js_1 = __nccwpck_require__(4306);
-const make_command_js_1 = __nccwpck_require__(3830);
 const pack_js_1 = __nccwpck_require__(7788);
+function create(opt_, files, cb) {
+    if (typeof files === 'function') {
+        cb = files;
+    }
+    if (Array.isArray(opt_)) {
+        ;
+        (files = opt_), (opt_ = {});
+    }
+    if (!files || !Array.isArray(files) || !files.length) {
+        throw new TypeError('no files or directories specified');
+    }
+    files = Array.from(files);
+    const opt = (0, options_js_1.dealias)(opt_);
+    if (opt.sync && typeof cb === 'function') {
+        throw new TypeError('callback not supported for sync tar functions');
+    }
+    if (!opt.file && typeof cb === 'function') {
+        throw new TypeError('callback only supported with file option');
+    }
+    return ((0, options_js_1.isSyncFile)(opt) ? createFileSync(opt, files)
+        : (0, options_js_1.isFile)(opt) ? createFile(opt, files, cb)
+            : (0, options_js_1.isSync)(opt) ? createSync(opt, files)
+                : create_(opt, files));
+}
+exports.create = create;
 const createFileSync = (opt, files) => {
     const p = new pack_js_1.PackSync(opt);
     const stream = new fs_minipass_1.WriteStreamSync(opt.file, {
@@ -39830,7 +38482,7 @@ const createFileSync = (opt, files) => {
     p.pipe(stream);
     addFilesSync(p, files);
 };
-const createFile = (opt, files) => {
+const createFile = (opt, files, cb) => {
     const p = new pack_js_1.Pack(opt);
     const stream = new fs_minipass_1.WriteStream(opt.file, {
         mode: opt.mode || 0o666,
@@ -39842,7 +38494,7 @@ const createFile = (opt, files) => {
         p.on('error', rej);
     });
     addFilesAsync(p, files);
-    return promise;
+    return cb ? promise.then(cb, cb) : promise;
 };
 const addFilesSync = (p, files) => {
     files.forEach(file => {
@@ -39851,7 +38503,7 @@ const addFilesSync = (p, files) => {
                 file: node_path_1.default.resolve(p.cwd, file.slice(1)),
                 sync: true,
                 noResume: true,
-                onReadEntry: entry => p.add(entry),
+                onentry: entry => p.add(entry),
             });
         }
         else {
@@ -39867,7 +38519,7 @@ const addFilesAsync = async (p, files) => {
             await (0, list_js_1.list)({
                 file: node_path_1.default.resolve(String(p.cwd), file.slice(1)),
                 noResume: true,
-                onReadEntry: entry => {
+                onentry: entry => {
                     p.add(entry);
                 },
             });
@@ -39883,16 +38535,11 @@ const createSync = (opt, files) => {
     addFilesSync(p, files);
     return p;
 };
-const createAsync = (opt, files) => {
+const create_ = (opt, files) => {
     const p = new pack_js_1.Pack(opt);
     addFilesAsync(p, files);
     return p;
 };
-exports.create = (0, make_command_js_1.makeCommand)(createFileSync, createFile, createSync, createAsync, (_opt, files) => {
-    if (!files?.length) {
-        throw new TypeError('no paths specified to add to archive');
-    }
-});
 //# sourceMappingURL=create.js.map
 
 /***/ }),
@@ -39958,9 +38605,72 @@ exports.extract = void 0;
 // tar -x
 const fsm = __importStar(__nccwpck_require__(675));
 const node_fs_1 = __importDefault(__nccwpck_require__(7561));
-const list_js_1 = __nccwpck_require__(4306);
-const make_command_js_1 = __nccwpck_require__(3830);
+const node_path_1 = __nccwpck_require__(9411);
+const options_js_1 = __nccwpck_require__(9060);
+const strip_trailing_slashes_js_1 = __nccwpck_require__(6018);
 const unpack_js_1 = __nccwpck_require__(6973);
+function extract(opt_, files, cb) {
+    if (typeof opt_ === 'function') {
+        ;
+        (cb = opt_), (files = undefined), (opt_ = {});
+    }
+    else if (Array.isArray(opt_)) {
+        ;
+        (files = opt_), (opt_ = {});
+    }
+    if (typeof files === 'function') {
+        ;
+        (cb = files), (files = undefined);
+    }
+    if (!files) {
+        files = [];
+    }
+    else {
+        files = Array.from(files);
+    }
+    const opt = (0, options_js_1.dealias)(opt_);
+    if (opt.sync && typeof cb === 'function') {
+        throw new TypeError('callback not supported for sync tar functions');
+    }
+    if (!opt.file && typeof cb === 'function') {
+        throw new TypeError('callback only supported with file option');
+    }
+    if (files.length) {
+        filesFilter(opt, files);
+    }
+    return ((0, options_js_1.isSyncFile)(opt) ? extractFileSync(opt)
+        : (0, options_js_1.isFile)(opt) ? extractFile(opt, cb)
+            : (0, options_js_1.isSync)(opt) ? extractSync(opt)
+                : extract_(opt));
+}
+exports.extract = extract;
+// construct a filter that limits the file entries listed
+// include child entries if a dir is included
+const filesFilter = (opt, files) => {
+    const map = new Map(files.map(f => [(0, strip_trailing_slashes_js_1.stripTrailingSlashes)(f), true]));
+    const filter = opt.filter;
+    const mapHas = (file, r = '') => {
+        const root = r || (0, node_path_1.parse)(file).root || '.';
+        let ret;
+        if (file === root)
+            ret = false;
+        else {
+            const m = map.get(file);
+            if (m !== undefined) {
+                ret = m;
+            }
+            else {
+                ret = mapHas((0, node_path_1.dirname)(file), root);
+            }
+        }
+        map.set(file, ret);
+        return ret;
+    };
+    opt.filter =
+        filter ?
+            (file, entry) => filter(file, entry) && mapHas((0, strip_trailing_slashes_js_1.stripTrailingSlashes)(file))
+            : file => mapHas((0, strip_trailing_slashes_js_1.stripTrailingSlashes)(file));
+};
 const extractFileSync = (opt) => {
     const u = new unpack_js_1.UnpackSync(opt);
     const file = opt.file;
@@ -39974,7 +38684,7 @@ const extractFileSync = (opt) => {
     });
     stream.pipe(u);
 };
-const extractFile = (opt, _) => {
+const extractFile = (opt, cb) => {
     const u = new unpack_js_1.Unpack(opt);
     const readSize = opt.maxReadSize || 16 * 1024 * 1024;
     const file = opt.file;
@@ -39997,12 +38707,10 @@ const extractFile = (opt, _) => {
             }
         });
     });
-    return p;
+    return cb ? p.then(cb, cb) : p;
 };
-exports.extract = (0, make_command_js_1.makeCommand)(extractFileSync, extractFile, opt => new unpack_js_1.UnpackSync(opt), opt => new unpack_js_1.Unpack(opt), (opt, files) => {
-    if (files?.length)
-        (0, list_js_1.filesFilter)(opt, files);
-});
+const extractSync = (opt) => new unpack_js_1.UnpackSync(opt);
+const extract_ = (opt) => new unpack_js_1.Unpack(opt);
 //# sourceMappingURL=extract.js.map
 
 /***/ }),
@@ -40388,31 +39096,31 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.u = exports.types = exports.r = exports.t = exports.x = exports.c = void 0;
+exports.types = exports.x = exports.u = exports.t = exports.r = exports.c = void 0;
 __exportStar(__nccwpck_require__(7329), exports);
+__exportStar(__nccwpck_require__(5478), exports);
+__exportStar(__nccwpck_require__(4306), exports);
+__exportStar(__nccwpck_require__(8780), exports);
+__exportStar(__nccwpck_require__(2476), exports);
 var create_js_1 = __nccwpck_require__(7329);
 Object.defineProperty(exports, "c", ({ enumerable: true, get: function () { return create_js_1.create; } }));
-__exportStar(__nccwpck_require__(2476), exports);
-var extract_js_1 = __nccwpck_require__(2476);
-Object.defineProperty(exports, "x", ({ enumerable: true, get: function () { return extract_js_1.extract; } }));
-__exportStar(__nccwpck_require__(2374), exports);
-__exportStar(__nccwpck_require__(4306), exports);
-var list_js_1 = __nccwpck_require__(4306);
-Object.defineProperty(exports, "t", ({ enumerable: true, get: function () { return list_js_1.list; } }));
-// classes
-__exportStar(__nccwpck_require__(7788), exports);
-__exportStar(__nccwpck_require__(2522), exports);
-__exportStar(__nccwpck_require__(8567), exports);
-__exportStar(__nccwpck_require__(7369), exports);
-__exportStar(__nccwpck_require__(5478), exports);
 var replace_js_1 = __nccwpck_require__(5478);
 Object.defineProperty(exports, "r", ({ enumerable: true, get: function () { return replace_js_1.replace; } }));
-exports.types = __importStar(__nccwpck_require__(7390));
-__exportStar(__nccwpck_require__(6973), exports);
-__exportStar(__nccwpck_require__(8780), exports);
+var list_js_1 = __nccwpck_require__(4306);
+Object.defineProperty(exports, "t", ({ enumerable: true, get: function () { return list_js_1.list; } }));
 var update_js_1 = __nccwpck_require__(8780);
 Object.defineProperty(exports, "u", ({ enumerable: true, get: function () { return update_js_1.update; } }));
+var extract_js_1 = __nccwpck_require__(2476);
+Object.defineProperty(exports, "x", ({ enumerable: true, get: function () { return extract_js_1.extract; } }));
+// classes
+__exportStar(__nccwpck_require__(7788), exports);
+__exportStar(__nccwpck_require__(6973), exports);
+__exportStar(__nccwpck_require__(2522), exports);
+__exportStar(__nccwpck_require__(7369), exports);
 __exportStar(__nccwpck_require__(4028), exports);
+__exportStar(__nccwpck_require__(2374), exports);
+__exportStar(__nccwpck_require__(8567), exports);
+exports.types = __importStar(__nccwpck_require__(7390));
 //# sourceMappingURL=index.js.map
 
 /***/ }),
@@ -40555,20 +39263,57 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.list = exports.filesFilter = void 0;
+exports.list = void 0;
 // tar -t
 const fsm = __importStar(__nccwpck_require__(675));
 const node_fs_1 = __importDefault(__nccwpck_require__(7561));
 const path_1 = __nccwpck_require__(1017);
-const make_command_js_1 = __nccwpck_require__(3830);
+const options_js_1 = __nccwpck_require__(9060);
 const parse_js_1 = __nccwpck_require__(2522);
 const strip_trailing_slashes_js_1 = __nccwpck_require__(6018);
-const onReadEntryFunction = (opt) => {
-    const onReadEntry = opt.onReadEntry;
-    opt.onReadEntry =
-        onReadEntry ?
+function list(opt_, files, cb) {
+    if (typeof opt_ === 'function') {
+        ;
+        (cb = opt_), (files = undefined), (opt_ = {});
+    }
+    else if (Array.isArray(opt_)) {
+        ;
+        (files = opt_), (opt_ = {});
+    }
+    if (typeof files === 'function') {
+        ;
+        (cb = files), (files = undefined);
+    }
+    if (!files) {
+        files = [];
+    }
+    else {
+        files = Array.from(files);
+    }
+    const opt = (0, options_js_1.dealias)(opt_);
+    if (opt.sync && typeof cb === 'function') {
+        throw new TypeError('callback not supported for sync tar functions');
+    }
+    if (!opt.file && typeof cb === 'function') {
+        throw new TypeError('callback only supported with file option');
+    }
+    if (files.length) {
+        filesFilter(opt, files);
+    }
+    if (!opt.noResume) {
+        onentryFunction(opt);
+    }
+    return ((0, options_js_1.isSyncFile)(opt) ? listFileSync(opt)
+        : (0, options_js_1.isFile)(opt) ? listFile(opt, cb)
+            : list_(opt));
+}
+exports.list = list;
+const onentryFunction = (opt) => {
+    const onentry = opt.onentry;
+    opt.onentry =
+        onentry ?
             e => {
-                onReadEntry(e);
+                onentry(e);
                 e.resume();
             }
             : e => e.resume();
@@ -40600,9 +39345,8 @@ const filesFilter = (opt, files) => {
             (file, entry) => filter(file, entry) && mapHas((0, strip_trailing_slashes_js_1.stripTrailingSlashes)(file))
             : file => mapHas((0, strip_trailing_slashes_js_1.stripTrailingSlashes)(file));
 };
-exports.filesFilter = filesFilter;
 const listFileSync = (opt) => {
-    const p = new parse_js_1.Parser(opt);
+    const p = list_(opt);
     const file = opt.file;
     let fd;
     try {
@@ -40633,7 +39377,7 @@ const listFileSync = (opt) => {
         }
     }
 };
-const listFile = (opt, _files) => {
+const listFile = (opt, cb) => {
     const parse = new parse_js_1.Parser(opt);
     const readSize = opt.maxReadSize || 16 * 1024 * 1024;
     const file = opt.file;
@@ -40654,83 +39398,10 @@ const listFile = (opt, _files) => {
             }
         });
     });
-    return p;
+    return cb ? p.then(cb, cb) : p;
 };
-exports.list = (0, make_command_js_1.makeCommand)(listFileSync, listFile, opt => new parse_js_1.Parser(opt), opt => new parse_js_1.Parser(opt), (opt, files) => {
-    if (files?.length)
-        (0, exports.filesFilter)(opt, files);
-    if (!opt.noResume)
-        onReadEntryFunction(opt);
-});
+const list_ = (opt) => new parse_js_1.Parser(opt);
 //# sourceMappingURL=list.js.map
-
-/***/ }),
-
-/***/ 3830:
-/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.makeCommand = void 0;
-const options_js_1 = __nccwpck_require__(9060);
-const makeCommand = (syncFile, asyncFile, syncNoFile, asyncNoFile, validate) => {
-    return Object.assign((opt_ = [], entries, cb) => {
-        if (Array.isArray(opt_)) {
-            entries = opt_;
-            opt_ = {};
-        }
-        if (typeof entries === 'function') {
-            cb = entries;
-            entries = undefined;
-        }
-        if (!entries) {
-            entries = [];
-        }
-        else {
-            entries = Array.from(entries);
-        }
-        const opt = (0, options_js_1.dealias)(opt_);
-        validate?.(opt, entries);
-        if ((0, options_js_1.isSyncFile)(opt)) {
-            if (typeof cb === 'function') {
-                throw new TypeError('callback not supported for sync tar functions');
-            }
-            return syncFile(opt, entries);
-        }
-        else if ((0, options_js_1.isAsyncFile)(opt)) {
-            const p = asyncFile(opt, entries);
-            // weirdness to make TS happy
-            const c = cb ? cb : undefined;
-            return c ? p.then(() => c(), c) : p;
-        }
-        else if ((0, options_js_1.isSyncNoFile)(opt)) {
-            if (typeof cb === 'function') {
-                throw new TypeError('callback not supported for sync tar functions');
-            }
-            return syncNoFile(opt, entries);
-        }
-        else if ((0, options_js_1.isAsyncNoFile)(opt)) {
-            if (typeof cb === 'function') {
-                throw new TypeError('callback only supported with file option');
-            }
-            return asyncNoFile(opt, entries);
-            /* c8 ignore start */
-        }
-        else {
-            throw new Error('impossible options??');
-        }
-        /* c8 ignore stop */
-    }, {
-        syncFile,
-        asyncFile,
-        syncNoFile,
-        asyncNoFile,
-        validate,
-    });
-};
-exports.makeCommand = makeCommand;
-//# sourceMappingURL=make-command.js.map
 
 /***/ }),
 
@@ -41036,7 +39707,7 @@ exports.normalizeWindowsPath = platform !== 'win32' ?
 
 // turn tar(1) style args like `C` into the more verbose things like `cwd`
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.dealias = exports.isNoFile = exports.isFile = exports.isAsync = exports.isSync = exports.isAsyncNoFile = exports.isSyncNoFile = exports.isAsyncFile = exports.isSyncFile = void 0;
+exports.dealias = exports.isFile = exports.isSync = exports.isSyncFile = void 0;
 const argmap = new Map([
     ['C', 'cwd'],
     ['f', 'file'],
@@ -41057,24 +39728,13 @@ const argmap = new Map([
     ['p', 'preserveOwner'],
     ['L', 'follow'],
     ['h', 'follow'],
-    ['onentry', 'onReadEntry'],
 ]);
 const isSyncFile = (o) => !!o.sync && !!o.file;
 exports.isSyncFile = isSyncFile;
-const isAsyncFile = (o) => !o.sync && !!o.file;
-exports.isAsyncFile = isAsyncFile;
-const isSyncNoFile = (o) => !!o.sync && !o.file;
-exports.isSyncNoFile = isSyncNoFile;
-const isAsyncNoFile = (o) => !o.sync && !o.file;
-exports.isAsyncNoFile = isAsyncNoFile;
 const isSync = (o) => !!o.sync;
 exports.isSync = isSync;
-const isAsync = (o) => !o.sync;
-exports.isAsync = isAsync;
 const isFile = (o) => !!o.file;
 exports.isFile = isFile;
-const isNoFile = (o) => !o.file;
-exports.isNoFile = isNoFile;
 const dealiasKey = (k) => {
     const d = argmap.get(k);
     if (d)
@@ -41210,7 +39870,6 @@ class Pack extends minipass_1.Minipass {
     filter;
     jobs;
     [WRITEENTRYCLASS];
-    onWriteEntry;
     [QUEUE];
     [JOBS] = 0;
     [PROCESSING] = false;
@@ -41228,7 +39887,6 @@ class Pack extends minipass_1.Minipass {
         this.linkCache = opt.linkCache || new Map();
         this.statCache = opt.statCache || new Map();
         this.readdirCache = opt.readdirCache || new Map();
-        this.onWriteEntry = opt.onWriteEntry;
         this[WRITEENTRYCLASS] = write_entry_js_1.WriteEntry;
         if (typeof opt.onwarn === 'function') {
             this.on('warn', opt.onwarn);
@@ -41271,7 +39929,7 @@ class Pack extends minipass_1.Minipass {
         if (opt.mtime)
             this.mtime = opt.mtime;
         this.filter =
-            typeof opt.filter === 'function' ? opt.filter : () => true;
+            typeof opt.filter === 'function' ? opt.filter : _ => true;
         this[QUEUE] = new yallist_1.Yallist();
         this[JOBS] = 0;
         this.jobs = Number(opt.jobs) || 4;
@@ -41470,9 +40128,8 @@ class Pack extends minipass_1.Minipass {
     [ENTRY](job) {
         this[JOBS] += 1;
         try {
-            const e = new this[WRITEENTRYCLASS](job.path, this[ENTRYOPT](job));
-            this.onWriteEntry?.(e);
-            return e.on('end', () => this[JOBDONE](job))
+            return new this[WRITEENTRYCLASS](job.path, this[ENTRYOPT](job))
+                .on('end', () => this[JOBDONE](job))
                 .on('error', er => this.emit('error', er));
         }
         catch (er) {
@@ -41527,7 +40184,6 @@ class Pack extends minipass_1.Minipass {
 }
 exports.Pack = Pack;
 class PackSync extends Pack {
-    sync = true;
     constructor(opt) {
         super(opt);
         this[WRITEENTRYCLASS] = write_entry_js_1.WriteEntrySync;
@@ -41706,8 +40362,8 @@ class Parser extends events_1.EventEmitter {
         if (typeof opt.onwarn === 'function') {
             this.on('warn', opt.onwarn);
         }
-        if (typeof opt.onReadEntry === 'function') {
-            this.on('entry', opt.onReadEntry);
+        if (typeof opt.onentry === 'function') {
+            this.on('entry', opt.onentry);
         }
     }
     warn(code, message, data = {}) {
@@ -42685,14 +41341,28 @@ const node_fs_1 = __importDefault(__nccwpck_require__(7561));
 const node_path_1 = __importDefault(__nccwpck_require__(9411));
 const header_js_1 = __nccwpck_require__(2374);
 const list_js_1 = __nccwpck_require__(4306);
-const make_command_js_1 = __nccwpck_require__(3830);
 const options_js_1 = __nccwpck_require__(9060);
 const pack_js_1 = __nccwpck_require__(7788);
-// starting at the head of the file, read a Header
-// If the checksum is invalid, that's our position to start writing
-// If it is, jump forward by the specified size (round up to 512)
-// and try again.
-// Write the new Pack stream starting there.
+function replace(opt_, files, cb) {
+    const opt = (0, options_js_1.dealias)(opt_);
+    if (!(0, options_js_1.isFile)(opt)) {
+        throw new TypeError('file is required');
+    }
+    if (opt.gzip ||
+        opt.brotli ||
+        opt.file.endsWith('.br') ||
+        opt.file.endsWith('.tbr')) {
+        throw new TypeError('cannot append to compressed archives');
+    }
+    if (!files || !Array.isArray(files) || !files.length) {
+        throw new TypeError('no files or directories specified');
+    }
+    files = Array.from(files);
+    return (0, options_js_1.isSyncFile)(opt) ?
+        replaceSync(opt, files)
+        : replace_(opt, files, cb);
+}
+exports.replace = replace;
 const replaceSync = (opt, files) => {
     const p = new pack_js_1.PackSync(opt);
     let threw = true;
@@ -42759,7 +41429,7 @@ const streamSync = (opt, p, position, fd, files) => {
     p.pipe(stream);
     addFilesSync(p, files);
 };
-const replaceAsync = (opt, files) => {
+const replace_ = (opt, files, cb) => {
     files = Array.from(files);
     const p = new pack_js_1.Pack(opt);
     const getPos = (fd, size, cb_) => {
@@ -42847,7 +41517,7 @@ const replaceAsync = (opt, files) => {
         };
         node_fs_1.default.open(opt.file, flag, onopen);
     });
-    return promise;
+    return cb ? promise.then(cb, cb) : promise;
 };
 const addFilesSync = (p, files) => {
     files.forEach(file => {
@@ -42856,7 +41526,7 @@ const addFilesSync = (p, files) => {
                 file: node_path_1.default.resolve(p.cwd, file.slice(1)),
                 sync: true,
                 noResume: true,
-                onReadEntry: entry => p.add(entry),
+                onentry: entry => p.add(entry),
             });
         }
         else {
@@ -42872,7 +41542,7 @@ const addFilesAsync = async (p, files) => {
             await (0, list_js_1.list)({
                 file: node_path_1.default.resolve(String(p.cwd), file.slice(1)),
                 noResume: true,
-                onReadEntry: entry => p.add(entry),
+                onentry: entry => p.add(entry),
             });
         }
         else {
@@ -42881,28 +41551,6 @@ const addFilesAsync = async (p, files) => {
     }
     p.end();
 };
-exports.replace = (0, make_command_js_1.makeCommand)(replaceSync, replaceAsync, 
-/* c8 ignore start */
-() => {
-    throw new TypeError('file is required');
-}, () => {
-    throw new TypeError('file is required');
-}, 
-/* c8 ignore stop */
-(opt, entries) => {
-    if (!(0, options_js_1.isFile)(opt)) {
-        throw new TypeError('file is required');
-    }
-    if (opt.gzip ||
-        opt.brotli ||
-        opt.file.endsWith('.br') ||
-        opt.file.endsWith('.tbr')) {
-        throw new TypeError('cannot append to compressed archives');
-    }
-    if (!entries?.length) {
-        throw new TypeError('no paths specified to add/replace');
-    }
-});
 //# sourceMappingURL=replace.js.map
 
 /***/ }),
@@ -43784,7 +42432,6 @@ const callSync = (fn) => {
     }
 };
 class UnpackSync extends Unpack {
-    sync = true;
     [MAKEFS](er, entry) {
         return super[MAKEFS](er, entry, () => { });
     }
@@ -43985,13 +42632,28 @@ exports.UnpackSync = UnpackSync;
 // tar -u
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.update = void 0;
-const make_command_js_1 = __nccwpck_require__(3830);
+const options_js_1 = __nccwpck_require__(9060);
 const replace_js_1 = __nccwpck_require__(5478);
 // just call tar.r with the filter and mtimeCache
-exports.update = (0, make_command_js_1.makeCommand)(replace_js_1.replace.syncFile, replace_js_1.replace.asyncFile, replace_js_1.replace.syncNoFile, replace_js_1.replace.asyncNoFile, (opt, entries = []) => {
-    replace_js_1.replace.validate?.(opt, entries);
+const update = (opt_, files, cb) => {
+    const opt = (0, options_js_1.dealias)(opt_);
+    if (!(0, options_js_1.isFile)(opt)) {
+        throw new TypeError('file is required');
+    }
+    if (opt.gzip ||
+        opt.brotli ||
+        opt.file.endsWith('.br') ||
+        opt.file.endsWith('.tbr')) {
+        throw new TypeError('cannot append to compressed archives');
+    }
+    if (!files || !Array.isArray(files) || !files.length) {
+        throw new TypeError('no files or directories specified');
+    }
+    files = Array.from(files);
     mtimeFilter(opt);
-});
+    return (0, replace_js_1.replace)(opt, files, cb);
+};
+exports.update = update;
 const mtimeFilter = (opt) => {
     const filter = opt.filter;
     if (!opt.mtimeCache) {
@@ -44535,7 +43197,6 @@ class WriteEntry extends minipass_1.Minipass {
 }
 exports.WriteEntry = WriteEntry;
 class WriteEntrySync extends WriteEntry {
-    sync = true;
     [LSTAT]() {
         this[ONLSTAT](fs_1.default.lstatSync(this.absolute));
     }
@@ -44783,9 +43444,9 @@ const proc = typeof process === 'object' && process
         stdout: null,
         stderr: null,
     };
-const node_events_1 = __nccwpck_require__(5673);
-const node_stream_1 = __importDefault(__nccwpck_require__(4492));
-const node_string_decoder_1 = __nccwpck_require__(6915);
+const events_1 = __nccwpck_require__(2361);
+const stream_1 = __importDefault(__nccwpck_require__(2781));
+const string_decoder_1 = __nccwpck_require__(1576);
 /**
  * Return true if the argument is a Minipass stream, Node stream, or something
  * else that Minipass can interact with.
@@ -44793,7 +43454,7 @@ const node_string_decoder_1 = __nccwpck_require__(6915);
 const isStream = (s) => !!s &&
     typeof s === 'object' &&
     (s instanceof Minipass ||
-        s instanceof node_stream_1.default ||
+        s instanceof stream_1.default ||
         (0, exports.isReadable)(s) ||
         (0, exports.isWritable)(s));
 exports.isStream = isStream;
@@ -44802,17 +43463,17 @@ exports.isStream = isStream;
  */
 const isReadable = (s) => !!s &&
     typeof s === 'object' &&
-    s instanceof node_events_1.EventEmitter &&
+    s instanceof events_1.EventEmitter &&
     typeof s.pipe === 'function' &&
     // node core Writable streams have a pipe() method, but it throws
-    s.pipe !== node_stream_1.default.Writable.prototype.pipe;
+    s.pipe !== stream_1.default.Writable.prototype.pipe;
 exports.isReadable = isReadable;
 /**
  * Return true if the argument is a valid {@link Minipass.Writable}
  */
 const isWritable = (s) => !!s &&
     typeof s === 'object' &&
-    s instanceof node_events_1.EventEmitter &&
+    s instanceof events_1.EventEmitter &&
     typeof s.write === 'function' &&
     typeof s.end === 'function';
 exports.isWritable = isWritable;
@@ -44919,7 +43580,7 @@ const isEncodingOptions = (o) => !o.objectMode && !!o.encoding && o.encoding !==
  * `Events` is the set of event handler signatures that this object
  * will emit, see {@link Minipass.Events}
  */
-class Minipass extends node_events_1.EventEmitter {
+class Minipass extends events_1.EventEmitter {
     [FLOWING] = false;
     [PAUSED] = false;
     [PIPES] = [];
@@ -44974,7 +43635,7 @@ class Minipass extends node_events_1.EventEmitter {
         }
         this[ASYNC] = !!options.async;
         this[DECODER] = this[ENCODING]
-            ? new node_string_decoder_1.StringDecoder(this[ENCODING])
+            ? new string_decoder_1.StringDecoder(this[ENCODING])
             : null;
         //@ts-ignore - private option for debugging and testing
         if (options && options.debugExposeBuffer === true) {
