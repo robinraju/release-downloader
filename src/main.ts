@@ -43,20 +43,22 @@ async function run(): Promise<void> {
       // Make executables executable
       for (const file of readdirSync(out)) {
         let full = join(out, file)
-        const toSliceTo = /-(v?)[0-9]/.exec(file)
-        if (toSliceTo) {
-          const old = full
-          full = join(out, file.slice(0, toSliceTo.index))
-          renameSync(old, full)
-          core.debug(`Renamed ${old} to ${full}`)
+        if (statSync(full).isFile()) {
+          const toSliceTo = /-(v?)[0-9]/.exec(file)
+          if (toSliceTo) {
+            const old = full
+            full = join(out, file.slice(0, toSliceTo.index))
+            renameSync(old, full)
+            core.debug(`Renamed ${old} to ${full}`)
+          }
+          const newMode =
+            statSync(full).mode |
+            constants.S_IXUSR |
+            constants.S_IXGRP |
+            constants.S_IXOTH
+          chmodSync(full, newMode)
+          core.info(`Made ${full} executable`)
         }
-        const newMode =
-          statSync(full).mode |
-          constants.S_IXUSR |
-          constants.S_IXGRP |
-          constants.S_IXOTH
-        chmodSync(full, newMode)
-        core.info(`Made ${full} executable`)
       }
       core.addPath(out)
       core.info(`Added ${out} to PATH`)

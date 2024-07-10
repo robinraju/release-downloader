@@ -31261,19 +31261,21 @@ async function run() {
             // Make executables executable
             for (const file of (0, node_fs_1.readdirSync)(out)) {
                 let full = (0, node_path_1.join)(out, file);
-                const toSliceTo = /-(v?)[0-9]/.exec(file);
-                if (toSliceTo) {
-                    const old = full;
-                    full = (0, node_path_1.join)(out, file.slice(0, toSliceTo.index));
-                    (0, node_fs_1.renameSync)(old, full);
-                    core.debug(`Renamed ${old} to ${full}`);
+                if ((0, node_fs_1.statSync)(full).isFile()) {
+                    const toSliceTo = /-(v?)[0-9]/.exec(file);
+                    if (toSliceTo) {
+                        const old = full;
+                        full = (0, node_path_1.join)(out, file.slice(0, toSliceTo.index));
+                        (0, node_fs_1.renameSync)(old, full);
+                        core.debug(`Renamed ${old} to ${full}`);
+                    }
+                    const newMode = (0, node_fs_1.statSync)(full).mode |
+                        node_fs_1.constants.S_IXUSR |
+                        node_fs_1.constants.S_IXGRP |
+                        node_fs_1.constants.S_IXOTH;
+                    (0, node_fs_1.chmodSync)(full, newMode);
+                    core.info(`Made ${full} executable`);
                 }
-                const newMode = (0, node_fs_1.statSync)(full).mode |
-                    node_fs_1.constants.S_IXUSR |
-                    node_fs_1.constants.S_IXGRP |
-                    node_fs_1.constants.S_IXOTH;
-                (0, node_fs_1.chmodSync)(full, newMode);
-                core.info(`Made ${full} executable`);
             }
             core.addPath(out);
             core.info(`Added ${out} to PATH`);
