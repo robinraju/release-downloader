@@ -63,7 +63,7 @@ specified files from both private and public repositories.
 
     # Add downloaded file path to the PATH environment variable
     # Default: false
-    # Also strips any information after `-(v?)[0-9]` (which is commonly version and platform information), so that 
+    # Also strips any information after `-(v?)[0-9]` (which is commonly version and platform information), so that
     # the binary is name matches its standard name.
     # Also makes binaries executable via chmod
     addToPath: false

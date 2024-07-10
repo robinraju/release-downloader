@@ -72,11 +72,7 @@
   "devDependencies": {
     "@jest/globals": "^29.7.0",
     "@types/jest": "^29.5.12",
-<<<<<<< HEAD
-    "@types/node": "^20.13.0",
-=======
     "@types/node": "^20.14.10",
->>>>>>> b5cac74e1522cb380b8058e12c6e2197447feadb
     "@types/tar": "^6.1.13",
     "@typescript-eslint/eslint-plugin": "^7.16.0",
     "@typescript-eslint/parser": "^7.16.0",
