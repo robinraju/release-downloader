@@ -2,8 +2,14 @@ import * as core from '@actions/core'
 import * as handlers from 'typed-rest-client/Handlers'
 import * as inputHelper from './input-helper'
 import * as thc from 'typed-rest-client/HttpClient'
-import { readdirSync, chmodSync, constants, renameSync, statSync } from 'node:fs'
-import { basename, join } from 'node:path'
+import {
+  readdirSync,
+  chmodSync,
+  constants,
+  renameSync,
+  statSync
+} from 'node:fs'
+import { join } from 'node:path'
 
 import { ReleaseDownloader } from './release-downloader'
 import { extract } from './unarchive'
@@ -33,23 +39,27 @@ async function run(): Promise<void> {
     }
 
     if (downloadSettings.addToPathEnvironmentVariable) {
-      const out = downloadSettings.outFilePath;
+      const out = downloadSettings.outFilePath
       // Make executables executable
       for (const file of readdirSync(out)) {
-        let full = join(out, file);
-        const toSliceTo = /-[0-9]/.exec(file);
+        let full = join(out, file)
+        const toSliceTo = /-(v?)[0-9]/.exec(file)
         if (toSliceTo) {
-          const old = full;
-          full = join(out, file.slice(0, toSliceTo.index));
-          renameSync(old, full);
-          core.debug(`Renamed ${old} to ${full}`);
+          const old = full
+          full = join(out, file.slice(0, toSliceTo.index))
+          renameSync(old, full)
+          core.debug(`Renamed ${old} to ${full}`)
         }
-        const newMode = statSync(full).mode | constants.S_IXUSR | constants.S_IXGRP | constants.S_IXOTH;
-        chmodSync(full, newMode);
-        core.info(`Added ${full} executable`);
+        const newMode =
+          statSync(full).mode |
+          constants.S_IXUSR |
+          constants.S_IXGRP |
+          constants.S_IXOTH
+        chmodSync(full, newMode)
+        core.info(`Made ${full} executable`)
       }
-      core.addPath(out);
-      core.info(`Added ${out} to PATH`);
+      core.addPath(out)
+      core.info(`Added ${out} to PATH`)
     }
 
     core.info(`Done: ${res}`)
