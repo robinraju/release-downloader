@@ -45,7 +45,12 @@ export interface IReleaseDownloadSettings {
   outFilePath: string
 
   /**
-   * Extract downloaded files to outFilePath
+   * Extract downloaded files
    */
   extractAssets: boolean
+
+  /**
+   * Path to extract files
+   */
+  extractPath: string
 }
