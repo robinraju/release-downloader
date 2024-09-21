@@ -8463,7 +8463,7 @@ var HttpCodes;
 })(HttpCodes || (exports.HttpCodes = HttpCodes = {}));
 const HttpRedirectCodes = [HttpCodes.MovedPermanently, HttpCodes.ResourceMoved, HttpCodes.SeeOther, HttpCodes.TemporaryRedirect, HttpCodes.PermanentRedirect];
 const HttpResponseRetryCodes = [HttpCodes.BadGateway, HttpCodes.ServiceUnavailable, HttpCodes.GatewayTimeout];
-const NetworkRetryErrors = ['ECONNRESET', 'ENOTFOUND', 'ESOCKETTIMEDOUT', 'ETIMEDOUT', 'ECONNREFUSED'];
+const NetworkRetryErrors = ['ECONNRESET', 'ENOTFOUND', 'ESOCKETTIMEDOUT', 'ETIMEDOUT', 'ECONNREFUSED', 'EHOSTUNREACH'];
 const RetryableHttpVerbs = ['OPTIONS', 'GET', 'DELETE', 'HEAD'];
 const ExponentialBackoffCeiling = 10;
 const ExponentialBackoffTimeSlice = 5;
@@ -32587,7 +32587,8 @@ function getInputs() {
         tarBall: core.getBooleanInput('tarBall'),
         zipBall: core.getBooleanInput('zipBall'),
         extractAssets: core.getBooleanInput('extract'),
-        outFilePath: path.resolve(githubWorkspacePath, core.getInput('out-file-path') || '.')
+        outFilePath: path.resolve(githubWorkspacePath, core.getInput('out-file-path') || '.'),
+        extractPath: path.resolve(githubWorkspacePath, core.getInput('extract-path') || core.getInput('out-file-path') || '.')
     };
 }
 
@@ -32642,7 +32643,7 @@ async function run() {
         const res = await downloader.download(downloadSettings);
         if (downloadSettings.extractAssets) {
             for (const asset of res) {
-                await (0, unarchive_1.extract)(asset, downloadSettings.outFilePath);
+                await (0, unarchive_1.extract)(asset, downloadSettings.extractPath);
             }
         }
         core.info(`Done: ${res}`);
@@ -37766,10 +37767,11 @@ class Minimatch {
         for (let i = 0; i < globParts.length - 1; i++) {
             for (let j = i + 1; j < globParts.length; j++) {
                 const matched = this.partsMatch(globParts[i], globParts[j], !this.preserveMultipleSlashes);
-                if (!matched)
-                    continue;
-                globParts[i] = matched;
-                globParts[j] = [];
+                if (matched) {
+                    globParts[i] = [];
+                    globParts[j] = matched;
+                    break;
+                }
             }
         }
         return globParts.filter(gs => gs.length);
