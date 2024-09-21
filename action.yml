@@ -14,8 +14,7 @@ inputs:
     required: false
   preRelease:
     description:
-      'A flag to download from prerelease. It should be combined with latest
-      flag'
+      'A flag to download from prerelease. It should be combined with latest flag'
     default: 'false'
     required: false
   tag:
@@ -24,8 +23,7 @@ inputs:
     required: false
   fileName:
     description:
-      "Name of the file to download (use '*' to download all assets other than
-      tarball or zipball)"
+      "Name of the file to download (use '*' to download all assets other than tarball or zipball)"
     default: ''
     required: false
   tarBall:
@@ -40,12 +38,15 @@ inputs:
     description:
       'Relative path under $GITHUB_WORKSPACE to place the downloaded files'
     default: '.'
-    required: true
+    required: false
   extract:
     description:
-      'If the downloaded assets should be extracted to `out-file-path`. Supports
-      tar, tar.gz and zip'
+      'If the downloaded assets should be extracted. Supports tar, tar.gz and zip'
     default: 'false'
+    required: false
+  extract-path:
+    description: 'Path where downloaded assets should be extracted. Defaults to `out-file-path` if not set.
+    default: ''
     required: false
   token:
     description: 'Github token to access private repos'
@@ -53,8 +54,7 @@ inputs:
     required: false
   github-api-url:
     description:
-      'The URL of the Github API, only use this input if you are using Github
-      Enterprise'
+      'The URL of the Github API, only use this input if you are using Github Enterprise'
     default: 'https://api.github.com'
     required: false
   releaseId:
@@ -68,8 +68,7 @@ outputs:
     description: 'The release name / title'
   downloaded_files:
     description:
-      "The array of downloaded files, useful when using wildcard '*' to download
-      multiple files."
+      "The array of downloaded files, useful when using wildcard '*' to download multiple files."
 
 runs:
   using: 'node20'
