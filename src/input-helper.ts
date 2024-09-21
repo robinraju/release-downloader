@@ -54,6 +54,10 @@ export function getInputs(): IReleaseDownloadSettings {
     outFilePath: path.resolve(
       githubWorkspacePath,
       core.getInput('out-file-path') || '.'
+    ),
+    extractPath: path.resolve(
+      githubWorkspacePath,
+      core.getInput('extract-path') || core.getInput('out-file-path') || '.'
     )
   }
 }
