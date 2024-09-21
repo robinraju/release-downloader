@@ -152,7 +152,8 @@ test('Download all files from public repo', async () => {
     tarBall: false,
     zipBall: false,
     extractAssets: false,
-    outFilePath: outputFilePath
+    outFilePath: outputFilePath,
+    extractPath: outputFilePath
   }
   const result = await downloader.download(downloadSettings)
   expect(result.length).toBe(7)
@@ -169,7 +170,8 @@ test('Download single file from public repo', async () => {
     tarBall: false,
     zipBall: false,
     extractAssets: false,
-    outFilePath: outputFilePath
+    outFilePath: outputFilePath,
+    extractPath: outputFilePath
   }
   const result = await downloader.download(downloadSettings)
   expect(result.length).toBe(1)
@@ -186,7 +188,8 @@ test('Fail loudly if given filename is not found in a release', async () => {
     tarBall: false,
     zipBall: false,
     extractAssets: false,
-    outFilePath: outputFilePath
+    outFilePath: outputFilePath,
+    extractPath: outputFilePath
   }
   const result = downloader.download(downloadSettings)
   await expect(result).rejects.toThrow(
@@ -205,7 +208,8 @@ test('Fail loudly if release is not identified', async () => {
     tarBall: false,
     zipBall: false,
     extractAssets: false,
-    outFilePath: outputFilePath
+    outFilePath: outputFilePath,
+    extractPath: outputFilePath
   }
   const result = downloader.download(downloadSettings)
   await expect(result).rejects.toThrow(
@@ -224,7 +228,8 @@ test('Download files with wildcard from public repo', async () => {
     tarBall: false,
     zipBall: false,
     extractAssets: false,
-    outFilePath: outputFilePath
+    outFilePath: outputFilePath,
+    extractPath: outputFilePath
   }
   const result = await downloader.download(downloadSettings)
   expect(result.length).toBe(2)
@@ -241,7 +246,8 @@ test('Download single file with wildcard from public repo', async () => {
     tarBall: false,
     zipBall: false,
     extractAssets: false,
-    outFilePath: outputFilePath
+    outFilePath: outputFilePath,
+    extractPath: outputFilePath
   }
   const result = await downloader.download(downloadSettings)
   expect(result.length).toBe(1)
@@ -258,7 +264,8 @@ test('Download multiple pdf files with wildcard filename', async () => {
     tarBall: false,
     zipBall: false,
     extractAssets: false,
-    outFilePath: outputFilePath
+    outFilePath: outputFilePath,
+    extractPath: outputFilePath
   }
   const result = await downloader.download(downloadSettings)
   expect(result.length).toBe(2)
@@ -275,7 +282,8 @@ test('Download a csv file with wildcard filename', async () => {
     tarBall: false,
     zipBall: false,
     extractAssets: false,
-    outFilePath: outputFilePath
+    outFilePath: outputFilePath,
+    extractPath: outputFilePath
   }
   const result = await downloader.download(downloadSettings)
   expect(result.length).toBe(1)
@@ -294,7 +302,8 @@ test('Download file from Github Enterprise server', async () => {
     tarBall: false,
     zipBall: false,
     extractAssets: false,
-    outFilePath: outputFilePath
+    outFilePath: outputFilePath,
+    extractPath: outputFilePath
   }
   const result = await downloader.download(downloadSettings)
   expect(result.length).toBe(1)
@@ -311,7 +320,8 @@ test('Download file from release identified by ID', async () => {
     tarBall: false,
     zipBall: false,
     extractAssets: false,
-    outFilePath: outputFilePath
+    outFilePath: outputFilePath,
+    extractPath: outputFilePath
   }
   const result = await downloader.download(downloadSettings)
   expect(result.length).toBe(1)
@@ -328,7 +338,8 @@ test('Download all archive files from public repo', async () => {
     tarBall: false,
     zipBall: false,
     extractAssets: true,
-    outFilePath: outputFilePath
+    outFilePath: outputFilePath,
+    extractPath: outputFilePath
   }
   const result = await downloader.download(downloadSettings)
   if (downloadSettings.extractAssets) {
@@ -367,7 +378,8 @@ test('Fail when a release with no assets are obtained', async () => {
     tarBall: false,
     zipBall: false,
     extractAssets: false,
-    outFilePath: outputFilePath
+    outFilePath: outputFilePath,
+    extractPath: outputFilePath
   }
   const result = downloader.download(downloadSettings)
   await expect(result).rejects.toThrow(
@@ -386,7 +398,8 @@ test('Download from latest prerelease', async () => {
     tarBall: false,
     zipBall: false,
     extractAssets: false,
-    outFilePath: outputFilePath
+    outFilePath: outputFilePath,
+    extractPath: outputFilePath
   }
   const result = await downloader.download(downloadSettings)
   expect(result.length).toBe(1)
@@ -403,7 +416,8 @@ test('Fail when a release with no prerelease is obtained', async () => {
     tarBall: false,
     zipBall: false,
     extractAssets: false,
-    outFilePath: outputFilePath
+    outFilePath: outputFilePath,
+    extractPath: outputFilePath
   }
   const result = downloader.download(downloadSettings)
   await expect(result).rejects.toThrow('No prereleases found!')
@@ -420,7 +434,8 @@ test('Download from a release containing only tarBall & zipBall', async () => {
     tarBall: true,
     zipBall: true,
     extractAssets: false,
-    outFilePath: outputFilePath
+    outFilePath: outputFilePath,
+    extractPath: outputFilePath
   }
 
   const result = await downloader.download(downloadSettings)
