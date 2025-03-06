@@ -42,7 +42,7 @@ specified files from both private and public repositories.
     zipBall: true
 
     # Relative path under $GITHUB_WORKSPACE to place the downloaded file(s)
-    # It will create the target directory automatically if not present
+    # It will create the target directory automatically if not present, defaults to root directory
     # eg: out-file-path: "my-downloads" => It will create directory $GITHUB_WORKSPACE/my-downloads
     out-file-path: ''
 
@@ -50,6 +50,12 @@ specified files from both private and public repositories.
     # Checks all downloaded files if they end with zip, tar or tar.gz and extracts them, if true.
     # Prints a warning if enabled but file is not an archive - but does not fail.
     extract: false
+
+    # Relative path under $GITHUB_WORKSPACE to extract the downloaded file(s) if extract flag is set
+    # Checks all downloaded files if they end with zip, tar or tar.gz and extracts them to this path if specified.
+    # If not set it points to "out-file-path" directory.
+    # eg: extract-path: "my-downloads" => It will create directory $GITHUB_WORKSPACE/my-downloads
+    extract-path: ''
 
     # Github access token to download files from private repositories
     # https://docs.github.com/en/actions/configuring-and-managing-workflows/creating-and-storing-encrypted-secrets

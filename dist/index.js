@@ -33157,7 +33157,8 @@ function getInputs() {
         tarBall: core.getBooleanInput('tarBall'),
         zipBall: core.getBooleanInput('zipBall'),
         extractAssets: core.getBooleanInput('extract'),
-        outFilePath: path.resolve(githubWorkspacePath, core.getInput('out-file-path') || '.')
+        outFilePath: path.resolve(githubWorkspacePath, core.getInput('out-file-path') || '.'),
+        extractPath: path.resolve(githubWorkspacePath, core.getInput('extract-path') || core.getInput('out-file-path') || '.')
     };
 }
 
@@ -33212,7 +33213,7 @@ async function run() {
         const res = await downloader.download(downloadSettings);
         if (downloadSettings.extractAssets) {
             for (const asset of res) {
-                await (0, unarchive_1.extract)(asset, downloadSettings.outFilePath);
+                await (0, unarchive_1.extract)(asset, downloadSettings.extractPath);
             }
         }
         core.info(`Done: ${res}`);
