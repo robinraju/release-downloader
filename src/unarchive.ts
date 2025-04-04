@@ -36,5 +36,6 @@ export const extract = async (
     await zip.extract(null, destDir)
     await zip.close()
   }
+  await fs.rm(filePath)
   core.info(`Extracted ${filename} to ${destDir}`)
 }
