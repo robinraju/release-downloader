@@ -8,7 +8,7 @@ export const extract = async (
   filePath: string,
   destDir: string
 ): Promise<void> => {
-  const isTarGz = filePath.endsWith('.tar.gz') || filePath.endsWith('.tar')
+  const isTarGz = filePath.endsWith('.tar.gz') || filePath.endsWith('.tar') || filePath.endsWith('.tgz')
   const isZip = filePath.endsWith('.zip')
   const filename = path.basename(filePath)
 
