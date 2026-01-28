@@ -256,7 +256,7 @@ export class ReleaseDownloader {
     const outFileDir = path.resolve(out)
 
     if (!fs.existsSync(outFileDir)) {
-      io.mkdirP(outFileDir)
+      await io.mkdirP(outFileDir)
     }
 
     const downloads: Promise<string>[] = []
