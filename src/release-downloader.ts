@@ -9,6 +9,13 @@ import { DownloadMetaData, GithubRelease } from './gh-api'
 import { IHeaders, IHttpClientResponse } from 'typed-rest-client/Interfaces'
 
 import { IReleaseDownloadSettings } from './download-settings'
+import {
+  HttpError,
+  AssetNotFoundError,
+  ConfigError,
+  ReleaseDownloaderError,
+  FileNotFoundError
+} from './errors'
 
 export class ReleaseDownloader {
   private httpClient: thc.HttpClient
@@ -41,8 +48,8 @@ export class ReleaseDownloader {
         downloadSettings.id
       )
     } else {
-      throw new Error(
-        'Config error: Please input a valid tag or release ID, or specify `latest`'
+      throw new ConfigError(
+        'Please input a valid tag or release ID, or specify `latest`'
       )
     }
 
@@ -89,11 +96,16 @@ export class ReleaseDownloader {
       )
     }
 
+    const url = !preRelease
+      ? `${this.apiRoot}/repos/${repoPath}/releases/latest`
+      : `${this.apiRoot}/repos/${repoPath}/releases`
+
     if (response.message.statusCode !== 200) {
-      const err: Error = new Error(
-        `[getlatestRelease] Unexpected response: ${response.message.statusCode}`
+      throw new HttpError(
+        response.message.statusCode ?? 0,
+        `Fetch latest release for '${repoPath}'`,
+        url
       )
-      throw err
     }
 
     const responseBody = await response.readBody()
@@ -112,7 +124,9 @@ export class ReleaseDownloader {
         release = latestPreRelease
         core.info(`Found latest pre-release version: ${release.tag_name}`)
       } else {
-        throw new Error('No prereleases found!')
+        throw new ReleaseDownloaderError(
+          `No prereleases found for repository '${repoPath}'`
+        )
       }
     }
 
@@ -131,21 +145,20 @@ export class ReleaseDownloader {
     core.info(`Fetching release ${tag} from repo ${repoPath}`)
 
     if (tag === '') {
-      throw new Error('Config error: Please input a valid tag')
+      throw new ConfigError('Please input a valid tag')
     }
 
     const headers: IHeaders = { Accept: 'application/vnd.github.v3+json' }
+    const url = `${this.apiRoot}/repos/${repoPath}/releases/tags/${tag}`
 
-    const response = await this.httpClient.get(
-      `${this.apiRoot}/repos/${repoPath}/releases/tags/${tag}`,
-      headers
-    )
+    const response = await this.httpClient.get(url, headers)
 
     if (response.message.statusCode !== 200) {
-      const err: Error = new Error(
-        `[getReleaseByTag] Unexpected response: ${response.message.statusCode}`
+      throw new HttpError(
+        response.message.statusCode ?? 0,
+        `Fetch release by tag '${tag}' for '${repoPath}'`,
+        url
       )
-      throw err
     }
 
     const responseBody = await response.readBody()
@@ -167,21 +180,20 @@ export class ReleaseDownloader {
     core.info(`Fetching release id:${id} from repo ${repoPath}`)
 
     if (id === '') {
-      throw new Error('Config error: Please input a valid release ID')
+      throw new ConfigError('Please input a valid release ID')
     }
 
     const headers: IHeaders = { Accept: 'application/vnd.github.v3+json' }
+    const url = `${this.apiRoot}/repos/${repoPath}/releases/${id}`
 
-    const response = await this.httpClient.get(
-      `${this.apiRoot}/repos/${repoPath}/releases/${id}`,
-      headers
-    )
+    const response = await this.httpClient.get(url, headers)
 
     if (response.message.statusCode !== 200) {
-      const err: Error = new Error(
-        `[getReleaseById] Unexpected response: ${response.message.statusCode}`
+      throw new HttpError(
+        response.message.statusCode ?? 0,
+        `Fetch release by ID '${id}' for '${repoPath}'`,
+        url
       )
-      throw err
     }
 
     const responseBody = await response.readBody()
@@ -199,6 +211,8 @@ export class ReleaseDownloader {
 
     if (downloadSettings.fileName.length > 0) {
       if (ghRelease && ghRelease.assets.length > 0) {
+        const availableAssetNames = ghRelease.assets.map(a => a.name)
+
         for (const asset of ghRelease.assets) {
           // download only matching file names
           if (!minimatch(asset.name, downloadSettings.fileName)) {
@@ -214,12 +228,13 @@ export class ReleaseDownloader {
         }
 
         if (downloads.length === 0) {
-          throw new Error(
-            `Asset with name ${downloadSettings.fileName} not found!`
+          throw new AssetNotFoundError(
+            downloadSettings.fileName,
+            availableAssetNames
           )
         }
       } else {
-        throw new Error(`No assets found in release ${ghRelease.name}`)
+        throw new AssetNotFoundError(downloadSettings.fileName, [])
       }
     }
 
@@ -287,10 +302,11 @@ export class ReleaseDownloader {
     if (response.message.statusCode === 200) {
       return this.saveFile(outputPath, asset.fileName, response)
     } else {
-      const err: Error = new Error(
-        `Unexpected response: ${response.message.statusCode}`
+      throw new HttpError(
+        response.message.statusCode ?? 0,
+        `Download asset '${asset.fileName}'`,
+        asset.url
       )
-      throw err
     }
   }
 
@@ -303,10 +319,49 @@ export class ReleaseDownloader {
     const fileStream: fs.WriteStream = fs.createWriteStream(outFilePath)
 
     return new Promise((resolve, reject) => {
-      fileStream.on('error', err => reject(err))
+      // Handle errors on BOTH streams
+      httpClientResponse.message.on('error', err =>
+        reject(
+          new ReleaseDownloaderError(
+            `Download stream failed for '${fileName}': ${err.message}`,
+            { fileName, outFilePath }
+          )
+        )
+      )
+      fileStream.on('error', err =>
+        reject(
+          new ReleaseDownloaderError(
+            `Failed to write '${fileName}': ${err.message}`,
+            { fileName, outFilePath }
+          )
+        )
+      )
+
       const outStream = httpClientResponse.message.pipe(fileStream)
 
       outStream.on('close', () => {
+        // Verify file exists and has content
+        if (!fs.existsSync(outFilePath)) {
+          reject(
+            new FileNotFoundError(
+              outFilePath,
+              'Download verification',
+              'The file was not created. This may indicate a network or permissions issue.'
+            )
+          )
+          return
+        }
+        const stats = fs.statSync(outFilePath)
+        if (stats.size === 0) {
+          reject(
+            new ReleaseDownloaderError(
+              `Downloaded file '${fileName}' is empty (0 bytes)`,
+              { fileName, outFilePath }
+            )
+          )
+          return
+        }
+        core.info(`Downloaded ${fileName} (${stats.size} bytes)`)
         resolve(outFilePath)
       })
     })
