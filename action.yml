@@ -72,7 +72,7 @@ outputs:
       multiple files."
 
 runs:
-  using: 'node20'
+  using: 'node24'
   main: 'dist/index.js'
 branding:
   icon: 'download'
