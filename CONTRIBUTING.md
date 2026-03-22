@@ -2,7 +2,7 @@
 
 ## Prerequisites
 
-- Node > v12.x
+- Node > v22.x
 - npm
 
 Install dependencies
@@ -11,11 +11,14 @@ Install dependencies
 npm install
 ```
 
-Build typescript and package it for distribution
+Build the distributable bundle and refresh the checked-in `dist/` output
 
 ```bash
-npm run build && npm run pack
+npm run package
 ```
+
+If you change runtime code under `src/`, run `npm run package` and commit the
+updated `dist/` contents. CI verifies that the committed bundle stays in sync.
 
 Run tests :heavy_check_mark:
 

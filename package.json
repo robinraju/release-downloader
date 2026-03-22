@@ -17,7 +17,7 @@
     "format:write": "npx prettier --write .",
     "format:check": "npx prettier --check .",
     "lint": "npx eslint .",
-    "package": "npx ncc build src/main.ts -o dist --license licenses.txt",
+    "package": "npx rimraf ./dist && npx ncc build src/main.ts -o dist --license licenses.txt",
     "package:watch": "npm run package -- --watch",
     "test": "npx jest",
     "all": "npm run format:write && npm run lint && npm run test && npm run package"
@@ -85,6 +85,7 @@
     "nock": "^14.0.11",
     "prettier": "3.5.3",
     "prettier-eslint": "^16.3.0",
+    "rimraf": "^6.1.3",
     "ts-jest": "^29.2.6",
     "typescript": "5.8.2"
   }
