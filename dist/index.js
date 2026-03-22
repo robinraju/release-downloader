@@ -33002,7 +33002,7 @@ class ReleaseDownloader {
     async downloadReleaseAssets(dData, out) {
         const outFileDir = path.resolve(out);
         if (!fs.existsSync(outFileDir)) {
-            io.mkdirP(outFileDir);
+            await io.mkdirP(outFileDir);
         }
         const downloads = [];
         for (const asset of dData) {
