@@ -1,75 +1,90 @@
-# In TypeScript actions, `dist/` is a special directory. When you reference
-# an action with the `uses:` property, `dist/index.js` is the code that will be
-# run. For this project, the `dist/index.js` file is transpiled from other
-# source files. This workflow ensures the `dist/` directory contains the
-# expected transpiled code.
-#
-# If this workflow is run from a feature branch, it will act as an additional CI
-# check and fail if the checked-in `dist/` directory does not match what is
-# expected from the build.
-name: Check Transpiled JavaScript
+name: Update dist
 
 on:
-  pull_request:
-    branches:
-      - main
-  push:
+  workflow_run:
+    workflows:
+      - Build and Test
+    types:
+      - completed
     branches:
       - main
 
 permissions:
   contents: read
 
+concurrency:
+  group: update-dist-main
+  cancel-in-progress: false
+
 jobs:
-  check-dist:
-    name: Check dist/
+  publish-dist:
+    if: >-
+      ${{
+        github.event.workflow_run.conclusion == 'success' &&
+        github.event.workflow_run.event == 'push'
+      }}
+    name: Publish dist
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
 
     steps:
-      - name: Checkout
-        id: checkout
+      - name: Checkout main
         uses: actions/checkout@v6
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Ensure main is still at the validated commit
+        id: tip-check
+        shell: bash
+        run: |
+          current_head="$(git rev-parse HEAD)"
+          validated_head="${{ github.event.workflow_run.head_sha }}"
+
+          if [ "$current_head" = "$validated_head" ]; then
+            echo "publish=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          echo "publish=false" >> "$GITHUB_OUTPUT"
+          echo "main moved from $validated_head to $current_head; a newer successful Build and Test run will refresh dist."
 
       - name: Setup Node.js
-        id: setup-node
+        if: steps.tip-check.outputs.publish == 'true'
         uses: actions/setup-node@v6
         with:
           node-version-file: '.node-version'
           cache: npm
 
-      - name: Install Dependencies
-        id: install
+      - name: Install dependencies
+        if: steps.tip-check.outputs.publish == 'true'
         run: npm ci
 
-      - name: Build dist/ Directory
-        id: build
+      - name: Build dist
+        if: steps.tip-check.outputs.publish == 'true'
         run: npm run package
 
-      # This will fail the workflow if the `dist/` directory is different than
-      # expected.
-      - name: Compare Directories
-        id: diff
+      - name: Detect dist changes
+        if: steps.tip-check.outputs.publish == 'true'
+        id: dist-status
+        shell: bash
         run: |
-          if [ ! -d dist/ ]; then
-            echo "Expected dist/ directory does not exist.  See status below:"
-            ls -la ./
-            exit 1
-          fi
-
-          if ! git diff --ignore-space-at-eol --text --quiet -- dist/ || \
+          if ! git diff --quiet -- dist/ || \
             [ -n "$(git ls-files --others --exclude-standard -- dist/)" ]; then
-            echo "Detected uncommitted changes after build. See status below:"
+            echo "changed=true" >> "$GITHUB_OUTPUT"
             git --no-pager status --short -- dist/
-            git --no-pager diff --ignore-space-at-eol --text -- dist/
-            exit 1
+            exit 0
           fi
 
-      # If `dist/` was different than expected, upload the expected version as a
-      # workflow artifact.
-      - if: ${{ failure() && steps.diff.outcome == 'failure' }}
-        name: Upload Artifact
-        id: upload
-        uses: actions/upload-artifact@v6
-        with:
-          name: dist
-          path: dist/
+          echo "changed=false" >> "$GITHUB_OUTPUT"
+
+      - name: Commit refreshed dist
+        if: steps.dist-status.outputs.changed == 'true'
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add dist/
+          git commit -m "chore: refresh dist [skip ci]"
+          git push origin HEAD:main

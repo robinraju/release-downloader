@@ -11,14 +11,19 @@ Install dependencies
 npm install
 ```
 
-Build the distributable bundle and refresh the checked-in `dist/` output
+Build the distributable bundle locally when you need to exercise the action from
+this checkout
 
 ```bash
 npm run package
 ```
 
-If you change runtime code under `src/`, run `npm run package` and commit the
-updated `dist/` contents. CI verifies that the committed bundle stays in sync.
+`dist/` is CI-managed. Pull requests must not include `dist/` changes; PR
+validation rejects them, and a post-merge workflow rebuilds and commits the
+generated bundle back to `main`.
+
+If you only needed a local bundle for debugging, discard the generated `dist/`
+changes before committing.
 
 Run tests :heavy_check_mark:
 
@@ -72,23 +77,12 @@ See the
 [toolkit documentation](https://github.com/actions/toolkit/blob/master/README.md#packages)
 for the various packages.
 
-## Publish to a distribution branch
+## Dist publication
 
-Actions are run from GitHub repos so we will checkin the packed dist folder.
-
-Then run [ncc](https://github.com/zeit/ncc) and push the results:
-
-```bash
-$ npm run package
-$ git add dist
-$ git commit -a -m "prod dependencies"
-$ git push origin releases/v1
-```
-
-Your action is now published! :rocket:
-
-See the
-[versioning documentation](https://github.com/actions/toolkit/blob/master/docs/action-versioning.md)
+This repository keeps `dist/` in Git because `action.yml` points to
+`dist/index.js`, but contributors do not publish it manually. After a change
+lands on `main`, GitHub Actions rebuilds `dist/` and commits the generated
+bundle back to the branch with the Actions bot.
 
 ## Validate
 

@@ -16,6 +16,12 @@ env:
 
 jobs:
   build:
+    if: >-
+      ${{
+        github.ref != 'refs/heads/main' ||
+        github.actor != 'github-actions[bot]' ||
+        !contains(github.event.head_commit.message, '[skip ci]')
+      }}
     strategy:
       fail-fast: false
       matrix:

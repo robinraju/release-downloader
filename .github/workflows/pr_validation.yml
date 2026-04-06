@@ -20,6 +20,20 @@ jobs:
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Reject committed dist changes
+        shell: bash
+        run: |
+          dist_changes="$(git diff --name-only "${{ github.event.pull_request.base.sha }}"..HEAD -- dist)"
+
+          if [ -n "$dist_changes" ]; then
+            echo "dist/ is CI-managed and must not be changed in pull requests."
+            echo "Changed dist files:"
+            echo "$dist_changes"
+            exit 1
+          fi
 
       - name: Setup node and cache dependencies
         uses: actions/setup-node@v6
