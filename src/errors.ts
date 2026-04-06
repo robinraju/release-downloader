@@ -38,7 +38,7 @@ export function getHttpErrorReason(statusCode: number): string {
 export class ReleaseDownloaderError extends Error {
   constructor(
     message: string,
-    public readonly context?: Record<string, unknown>
+    readonly context?: Record<string, unknown>
   ) {
     super(message)
     this.name = 'ReleaseDownloaderError'
@@ -50,9 +50,9 @@ export class ReleaseDownloaderError extends Error {
  */
 export class HttpError extends ReleaseDownloaderError {
   constructor(
-    public readonly statusCode: number,
-    public readonly operation: string,
-    public readonly url: string
+    readonly statusCode: number,
+    readonly operation: string,
+    readonly url: string
   ) {
     const reason = getHttpErrorReason(statusCode)
     super(`${operation} failed: ${reason} (HTTP ${statusCode})`, { url })
@@ -65,9 +65,9 @@ export class HttpError extends ReleaseDownloaderError {
  */
 export class FileNotFoundError extends ReleaseDownloaderError {
   constructor(
-    public readonly filePath: string,
-    public readonly operation: string,
-    public readonly hint?: string
+    readonly filePath: string,
+    readonly operation: string,
+    readonly hint?: string
   ) {
     const message = hint
       ? `${operation}: File not found at '${filePath}'. ${hint}`
@@ -82,8 +82,8 @@ export class FileNotFoundError extends ReleaseDownloaderError {
  */
 export class AssetNotFoundError extends ReleaseDownloaderError {
   constructor(
-    public readonly pattern: string,
-    public readonly availableAssets: string[]
+    readonly pattern: string,
+    readonly availableAssets: string[]
   ) {
     const assetList =
       availableAssets.length > 0

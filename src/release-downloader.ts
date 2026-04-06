@@ -82,23 +82,12 @@ export class ReleaseDownloader {
     core.info(`Fetching latest release for repo ${repoPath}`)
 
     const headers: IHeaders = { Accept: 'application/vnd.github.v3+json' }
-    let response: IHttpClientResponse
-
-    if (!preRelease) {
-      response = await this.httpClient.get(
-        `${this.apiRoot}/repos/${repoPath}/releases/latest`,
-        headers
-      )
-    } else {
-      response = await this.httpClient.get(
-        `${this.apiRoot}/repos/${repoPath}/releases`,
-        headers
-      )
-    }
 
     const url = !preRelease
       ? `${this.apiRoot}/repos/${repoPath}/releases/latest`
       : `${this.apiRoot}/repos/${repoPath}/releases`
+
+    const response = await this.httpClient.get(url, headers)
 
     if (response.message.statusCode !== 200) {
       throw new HttpError(
