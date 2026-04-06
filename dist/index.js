@@ -32642,6 +32642,126 @@ module.exports = {
 
 /***/ }),
 
+/***/ 3916:
+/***/ ((__unused_webpack_module, exports) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.ConfigError = exports.AssetNotFoundError = exports.FileNotFoundError = exports.HttpError = exports.ReleaseDownloaderError = void 0;
+exports.getHttpErrorReason = getHttpErrorReason;
+/**
+ * Maps HTTP status codes to user-friendly error messages
+ */
+function getHttpErrorReason(statusCode) {
+    switch (statusCode) {
+        case 400:
+            return 'Bad request - the request was malformed';
+        case 401:
+            return 'Authentication failed - check your token is valid';
+        case 403:
+            return 'Access denied - check your token has the required permissions';
+        case 404:
+            return 'Not found - verify the repository/tag/release exists';
+        case 422:
+            return 'Unprocessable entity - the request was valid but could not be processed';
+        case 429:
+            return 'Rate limited - too many requests, try again later';
+        case 500:
+            return 'GitHub server error - this is likely temporary, try again';
+        case 502:
+            return 'Bad gateway - GitHub may be experiencing issues';
+        case 503:
+            return 'Service unavailable - GitHub may be experiencing issues';
+        default:
+            if (statusCode >= 400 && statusCode < 500) {
+                return 'Client error';
+            }
+            if (statusCode >= 500) {
+                return 'Server error - this is likely temporary';
+            }
+            return 'Unexpected error';
+    }
+}
+/**
+ * Base error class for all release-downloader errors
+ */
+class ReleaseDownloaderError extends Error {
+    context;
+    constructor(message, context) {
+        super(message);
+        this.context = context;
+        this.name = 'ReleaseDownloaderError';
+    }
+}
+exports.ReleaseDownloaderError = ReleaseDownloaderError;
+/**
+ * Error thrown when an HTTP request fails
+ */
+class HttpError extends ReleaseDownloaderError {
+    statusCode;
+    operation;
+    url;
+    constructor(statusCode, operation, url) {
+        const reason = getHttpErrorReason(statusCode);
+        super(`${operation} failed: ${reason} (HTTP ${statusCode})`, { url });
+        this.statusCode = statusCode;
+        this.operation = operation;
+        this.url = url;
+        this.name = 'HttpError';
+    }
+}
+exports.HttpError = HttpError;
+/**
+ * Error thrown when a file is not found on disk
+ */
+class FileNotFoundError extends ReleaseDownloaderError {
+    filePath;
+    operation;
+    hint;
+    constructor(filePath, operation, hint) {
+        const message = hint
+            ? `${operation}: File not found at '${filePath}'. ${hint}`
+            : `${operation}: File not found at '${filePath}'`;
+        super(message, { filePath });
+        this.filePath = filePath;
+        this.operation = operation;
+        this.hint = hint;
+        this.name = 'FileNotFoundError';
+    }
+}
+exports.FileNotFoundError = FileNotFoundError;
+/**
+ * Error thrown when a release asset matching the pattern is not found
+ */
+class AssetNotFoundError extends ReleaseDownloaderError {
+    pattern;
+    availableAssets;
+    constructor(pattern, availableAssets) {
+        const assetList = availableAssets.length > 0
+            ? availableAssets.join(', ')
+            : '(no assets in release)';
+        super(`No asset matching '${pattern}' found in release. Available assets: ${assetList}`, { pattern, availableAssets });
+        this.pattern = pattern;
+        this.availableAssets = availableAssets;
+        this.name = 'AssetNotFoundError';
+    }
+}
+exports.AssetNotFoundError = AssetNotFoundError;
+/**
+ * Error thrown when the action configuration is invalid
+ */
+class ConfigError extends ReleaseDownloaderError {
+    constructor(message) {
+        super(message);
+        this.name = 'ConfigError';
+    }
+}
+exports.ConfigError = ConfigError;
+
+
+/***/ }),
+
 /***/ 5432:
 /***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
@@ -32770,6 +32890,7 @@ const inputHelper = __importStar(__nccwpck_require__(5432));
 const thc = __importStar(__nccwpck_require__(6184));
 const release_downloader_1 = __nccwpck_require__(3684);
 const unarchive_1 = __nccwpck_require__(736);
+const errors_1 = __nccwpck_require__(3916);
 async function run() {
     try {
         const downloadSettings = inputHelper.getInputs();
@@ -32789,10 +32910,45 @@ async function run() {
         core.info(`Done: ${res}`);
     }
     catch (error) {
-        if (error instanceof Error) {
-            core.setFailed(error.message);
+        handleError(error);
+    }
+}
+function handleError(error) {
+    if (error instanceof errors_1.HttpError) {
+        core.error(`HTTP Error: ${error.message}`);
+        core.error(`  URL: ${error.url}`);
+        if (error.statusCode === 401 || error.statusCode === 403) {
+            core.error(`  Hint: Verify the 'token' input has appropriate scopes`);
+        }
+        if (error.statusCode === 404) {
+            core.error(`  Hint: Check that the repository, tag, or release ID exists`);
         }
     }
+    else if (error instanceof errors_1.FileNotFoundError) {
+        core.error(`File Error: ${error.message}`);
+        if (error.hint) {
+            core.error(`  Hint: ${error.hint}`);
+        }
+    }
+    else if (error instanceof errors_1.AssetNotFoundError) {
+        core.error(`Asset not found: ${error.message}`);
+        if (error.availableAssets.length > 0) {
+            core.error(`  Available assets: ${error.availableAssets.join(', ')}`);
+        }
+    }
+    else if (error instanceof errors_1.ConfigError) {
+        core.error(`Configuration Error: ${error.message}`);
+    }
+    else if (error instanceof Error) {
+        core.error(error.message);
+        if (error.stack) {
+            core.debug(error.stack);
+        }
+    }
+    else {
+        core.error(String(error));
+    }
+    core.setFailed(error instanceof Error ? error.message : String(error));
 }
 run();
 
@@ -32844,6 +33000,7 @@ const fs = __importStar(__nccwpck_require__(9896));
 const io = __importStar(__nccwpck_require__(4994));
 const path = __importStar(__nccwpck_require__(6928));
 const minimatch_1 = __nccwpck_require__(6507);
+const errors_1 = __nccwpck_require__(3916);
 class ReleaseDownloader {
     httpClient;
     apiRoot;
@@ -32863,7 +33020,7 @@ class ReleaseDownloader {
             ghRelease = await this.getReleaseById(downloadSettings.sourceRepoPath, downloadSettings.id);
         }
         else {
-            throw new Error('Config error: Please input a valid tag or release ID, or specify `latest`');
+            throw new errors_1.ConfigError('Please input a valid tag or release ID, or specify `latest`');
         }
         const resolvedAssets = this.resolveAssets(ghRelease, downloadSettings);
         const result = await this.downloadReleaseAssets(resolvedAssets, downloadSettings.outFilePath);
@@ -32880,16 +33037,12 @@ class ReleaseDownloader {
     async getlatestRelease(repoPath, preRelease) {
         core.info(`Fetching latest release for repo ${repoPath}`);
         const headers = { Accept: 'application/vnd.github.v3+json' };
-        let response;
-        if (!preRelease) {
-            response = await this.httpClient.get(`${this.apiRoot}/repos/${repoPath}/releases/latest`, headers);
-        }
-        else {
-            response = await this.httpClient.get(`${this.apiRoot}/repos/${repoPath}/releases`, headers);
-        }
+        const url = !preRelease
+            ? `${this.apiRoot}/repos/${repoPath}/releases/latest`
+            : `${this.apiRoot}/repos/${repoPath}/releases`;
+        const response = await this.httpClient.get(url, headers);
         if (response.message.statusCode !== 200) {
-            const err = new Error(`[getlatestRelease] Unexpected response: ${response.message.statusCode}`);
-            throw err;
+            throw new errors_1.HttpError(response.message.statusCode ?? 0, `Fetch latest release for '${repoPath}'`, url);
         }
         const responseBody = await response.readBody();
         let release;
@@ -32905,7 +33058,7 @@ class ReleaseDownloader {
                 core.info(`Found latest pre-release version: ${release.tag_name}`);
             }
             else {
-                throw new Error('No prereleases found!');
+                throw new errors_1.ReleaseDownloaderError(`No prereleases found for repository '${repoPath}'`);
             }
         }
         return release;
@@ -32918,13 +33071,13 @@ class ReleaseDownloader {
     async getReleaseByTag(repoPath, tag) {
         core.info(`Fetching release ${tag} from repo ${repoPath}`);
         if (tag === '') {
-            throw new Error('Config error: Please input a valid tag');
+            throw new errors_1.ConfigError('Please input a valid tag');
         }
         const headers = { Accept: 'application/vnd.github.v3+json' };
-        const response = await this.httpClient.get(`${this.apiRoot}/repos/${repoPath}/releases/tags/${tag}`, headers);
+        const url = `${this.apiRoot}/repos/${repoPath}/releases/tags/${tag}`;
+        const response = await this.httpClient.get(url, headers);
         if (response.message.statusCode !== 200) {
-            const err = new Error(`[getReleaseByTag] Unexpected response: ${response.message.statusCode}`);
-            throw err;
+            throw new errors_1.HttpError(response.message.statusCode ?? 0, `Fetch release by tag '${tag}' for '${repoPath}'`, url);
         }
         const responseBody = await response.readBody();
         const release = JSON.parse(responseBody.toString());
@@ -32939,13 +33092,13 @@ class ReleaseDownloader {
     async getReleaseById(repoPath, id) {
         core.info(`Fetching release id:${id} from repo ${repoPath}`);
         if (id === '') {
-            throw new Error('Config error: Please input a valid release ID');
+            throw new errors_1.ConfigError('Please input a valid release ID');
         }
         const headers = { Accept: 'application/vnd.github.v3+json' };
-        const response = await this.httpClient.get(`${this.apiRoot}/repos/${repoPath}/releases/${id}`, headers);
+        const url = `${this.apiRoot}/repos/${repoPath}/releases/${id}`;
+        const response = await this.httpClient.get(url, headers);
         if (response.message.statusCode !== 200) {
-            const err = new Error(`[getReleaseById] Unexpected response: ${response.message.statusCode}`);
-            throw err;
+            throw new errors_1.HttpError(response.message.statusCode ?? 0, `Fetch release by ID '${id}' for '${repoPath}'`, url);
         }
         const responseBody = await response.readBody();
         const release = JSON.parse(responseBody.toString());
@@ -32956,6 +33109,7 @@ class ReleaseDownloader {
         const downloads = [];
         if (downloadSettings.fileName.length > 0) {
             if (ghRelease && ghRelease.assets.length > 0) {
+                const availableAssetNames = ghRelease.assets.map(a => a.name);
                 for (const asset of ghRelease.assets) {
                     // download only matching file names
                     if (!(0, minimatch_1.minimatch)(asset.name, downloadSettings.fileName)) {
@@ -32969,11 +33123,11 @@ class ReleaseDownloader {
                     downloads.push(dData);
                 }
                 if (downloads.length === 0) {
-                    throw new Error(`Asset with name ${downloadSettings.fileName} not found!`);
+                    throw new errors_1.AssetNotFoundError(downloadSettings.fileName, availableAssetNames);
                 }
             }
             else {
-                throw new Error(`No assets found in release ${ghRelease.name}`);
+                throw new errors_1.AssetNotFoundError(downloadSettings.fileName, []);
             }
         }
         if (downloadSettings.tarBall) {
@@ -33024,17 +33178,29 @@ class ReleaseDownloader {
             return this.saveFile(outputPath, asset.fileName, response);
         }
         else {
-            const err = new Error(`Unexpected response: ${response.message.statusCode}`);
-            throw err;
+            throw new errors_1.HttpError(response.message.statusCode ?? 0, `Download asset '${asset.fileName}'`, asset.url);
         }
     }
     async saveFile(outputPath, fileName, httpClientResponse) {
         const outFilePath = path.resolve(outputPath, fileName);
         const fileStream = fs.createWriteStream(outFilePath);
         return new Promise((resolve, reject) => {
-            fileStream.on('error', err => reject(err));
+            // Handle errors on BOTH streams
+            httpClientResponse.message.on('error', err => reject(new errors_1.ReleaseDownloaderError(`Download stream failed for '${fileName}': ${err.message}`, { fileName, outFilePath })));
+            fileStream.on('error', err => reject(new errors_1.ReleaseDownloaderError(`Failed to write '${fileName}': ${err.message}`, { fileName, outFilePath })));
             const outStream = httpClientResponse.message.pipe(fileStream);
             outStream.on('close', () => {
+                // Verify file exists and has content
+                if (!fs.existsSync(outFilePath)) {
+                    reject(new errors_1.FileNotFoundError(outFilePath, 'Download verification', 'The file was not created. This may indicate a network or permissions issue.'));
+                    return;
+                }
+                const stats = fs.statSync(outFilePath);
+                if (stats.size === 0) {
+                    reject(new errors_1.ReleaseDownloaderError(`Downloaded file '${fileName}' is empty (0 bytes)`, { fileName, outFilePath }));
+                    return;
+                }
+                core.info(`Downloaded ${fileName} (${stats.size} bytes)`);
                 resolve(outFilePath);
             });
         });
@@ -33090,10 +33256,16 @@ const fs = __importStar(__nccwpck_require__(9896));
 const path = __importStar(__nccwpck_require__(6928));
 const tar = __importStar(__nccwpck_require__(5942));
 const StreamZip = __importStar(__nccwpck_require__(9588));
+const errors_1 = __nccwpck_require__(3916);
 const extract = async (filePath, destDir) => {
+    const filename = path.basename(filePath);
+    // Check file exists BEFORE attempting extraction
+    if (!fs.existsSync(filePath)) {
+        throw new errors_1.FileNotFoundError(filePath, 'Extract archive', 'The download may have failed silently, or the file path is incorrect. ' +
+            'Check the download logs above for any errors.');
+    }
     const isTarGz = filePath.endsWith('.tar.gz') || filePath.endsWith('.tar');
     const isZip = filePath.endsWith('.zip');
-    const filename = path.basename(filePath);
     if (!isTarGz && !isZip) {
         core.warning(`The file ${filename} is not a supported archive. It will be skipped`);
         return;
@@ -33102,19 +33274,29 @@ const extract = async (filePath, destDir) => {
     if (!fs.existsSync(destDir)) {
         fs.mkdirSync(destDir, { recursive: true });
     }
-    // Extract the file to the destination directory
-    if (isTarGz) {
-        await tar.x({
-            file: filePath,
-            cwd: destDir
-        });
+    try {
+        // Extract the file to the destination directory
+        if (isTarGz) {
+            await tar.x({
+                file: filePath,
+                cwd: destDir
+            });
+        }
+        if (isZip) {
+            const zip = new StreamZip.async({ file: filePath });
+            await zip.extract(null, destDir);
+            await zip.close();
+        }
+        core.info(`Extracted ${filename} to ${destDir}`);
     }
-    if (isZip) {
-        const zip = new StreamZip.async({ file: filePath });
-        await zip.extract(null, destDir);
-        await zip.close();
+    catch (err) {
+        // Provide context for extraction failures
+        const errMsg = err instanceof Error ? err.message : String(err);
+        if (errMsg.includes('ENOENT')) {
+            throw new errors_1.FileNotFoundError(filePath, 'Extract archive', 'File disappeared during extraction. Check for disk space or permission issues.');
+        }
+        throw new errors_1.ReleaseDownloaderError(`Failed to extract '${filename}': ${errMsg}`, { filePath, destDir });
     }
-    core.info(`Extracted ${filename} to ${destDir}`);
 };
 exports.extract = extract;
 

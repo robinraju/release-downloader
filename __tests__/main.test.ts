@@ -190,7 +190,7 @@ test('Fail loudly if given filename is not found in a release', async () => {
   }
   const result = downloader.download(downloadSettings)
   await expect(result).rejects.toThrow(
-    'Asset with name missing-file.txt not found!'
+    "No asset matching 'missing-file.txt' found in release"
   )
 }, 10000)
 
@@ -209,7 +209,7 @@ test('Fail loudly if release is not identified', async () => {
   }
   const result = downloader.download(downloadSettings)
   await expect(result).rejects.toThrow(
-    'Config error: Please input a valid tag or release ID, or specify `latest`'
+    'Please input a valid tag or release ID, or specify `latest`'
   )
 }, 10000)
 
@@ -371,7 +371,7 @@ test('Fail when a release with no assets are obtained', async () => {
   }
   const result = downloader.download(downloadSettings)
   await expect(result).rejects.toThrow(
-    'No assets found in release Foo app - v1.0.0'
+    "No asset matching 'installer.zip' found in release. Available assets: (no assets in release)"
   )
 }, 10000)
 
@@ -406,7 +406,9 @@ test('Fail when a release with no prerelease is obtained', async () => {
     outFilePath: outputFilePath
   }
   const result = downloader.download(downloadSettings)
-  await expect(result).rejects.toThrow('No prereleases found!')
+  await expect(result).rejects.toThrow(
+    "No prereleases found for repository 'foo/slick-pg'"
+  )
 }, 10000)
 
 test('Download from a release containing only tarBall & zipBall', async () => {
