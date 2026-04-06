@@ -1,1 +1,10 @@
+* text=auto eol=lf
+
+*.jpeg binary
+*.jpg binary
+*.pdf binary
+*.png binary
+*.tar.gz binary
+*.zip binary
+
 dist/** -diff linguist-generated=true
