@@ -234,7 +234,6 @@ describe('ReleaseDownloader error handling', () => {
       outputFilePath,
       'missing-after-close.txt'
     )
-    const closeEmitter = new PassThrough()
     const message = new PassThrough()
     const response: IHttpClientResponse = {
       message: message as unknown as http.IncomingMessage,
@@ -246,15 +245,17 @@ describe('ReleaseDownloader error handling', () => {
     ): NodeJS.WritableStream => {
       const fileStream = destination as fs.WriteStream
 
-      fileStream.close()
-      if (fs.existsSync(missingFilePath)) {
-        fs.unlinkSync(missingFilePath)
-      }
-      process.nextTick(() => {
-        closeEmitter.emit('close')
+      fileStream.once('close', () => {
+        if (fs.existsSync(missingFilePath)) {
+          fs.unlinkSync(missingFilePath)
+        }
       })
 
-      return closeEmitter
+      fileStream.once('open', () => {
+        fileStream.close()
+      })
+
+      return fileStream
     }) as typeof message.pipe
 
     const result = saveFile(outputFilePath, 'missing-after-close.txt', response)
