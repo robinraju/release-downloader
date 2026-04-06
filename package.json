@@ -59,7 +59,15 @@
     "collectCoverage": true,
     "collectCoverageFrom": [
       "./src/**"
-    ]
+    ],
+    "coverageThreshold": {
+      "global": {
+        "branches": 90,
+        "functions": 100,
+        "lines": 95,
+        "statements": 95
+      }
+    }
   },
   "dependencies": {
     "@actions/core": "^1.11.1",

@@ -1,11 +1,12 @@
 import * as core from '@actions/core'
 import * as path from 'path'
+import { ConfigError } from './errors'
 import { IReleaseDownloadSettings } from './download-settings'
 
 function validateRepositoryPath(repositoryPath: string): void {
   const repoParts = repositoryPath.split('/')
   if (repoParts.length !== 2 || !repoParts[0] || !repoParts[1]) {
-    throw new Error(
+    throw new ConfigError(
       `Invalid repository '${repositoryPath}'. Expected format {owner}/{repo}.`
     )
   }
@@ -17,7 +18,7 @@ function validateReleaseVersion(
   releaseId: string
 ): void {
   if ((latestFlag && ghTag && releaseId) || (ghTag && releaseId)) {
-    throw new Error(
+    throw new ConfigError(
       `Invalid inputs. latest=${latestFlag}, tag=${ghTag}, and releaseId=${releaseId} can't coexist`
     )
   }
@@ -26,7 +27,7 @@ function validateReleaseVersion(
 export function getInputs(): IReleaseDownloadSettings {
   let githubWorkspacePath = process.env['GITHUB_WORKSPACE']
   if (!githubWorkspacePath) {
-    throw new Error('$GITHUB_WORKSPACE not defined')
+    throw new ConfigError('$GITHUB_WORKSPACE not defined')
   }
   githubWorkspacePath = path.resolve(githubWorkspacePath)
 

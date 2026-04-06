@@ -32804,21 +32804,22 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.getInputs = getInputs;
 const core = __importStar(__nccwpck_require__(7484));
 const path = __importStar(__nccwpck_require__(6928));
+const errors_1 = __nccwpck_require__(3916);
 function validateRepositoryPath(repositoryPath) {
     const repoParts = repositoryPath.split('/');
     if (repoParts.length !== 2 || !repoParts[0] || !repoParts[1]) {
-        throw new Error(`Invalid repository '${repositoryPath}'. Expected format {owner}/{repo}.`);
+        throw new errors_1.ConfigError(`Invalid repository '${repositoryPath}'. Expected format {owner}/{repo}.`);
     }
 }
 function validateReleaseVersion(latestFlag, ghTag, releaseId) {
     if ((latestFlag && ghTag && releaseId) || (ghTag && releaseId)) {
-        throw new Error(`Invalid inputs. latest=${latestFlag}, tag=${ghTag}, and releaseId=${releaseId} can't coexist`);
+        throw new errors_1.ConfigError(`Invalid inputs. latest=${latestFlag}, tag=${ghTag}, and releaseId=${releaseId} can't coexist`);
     }
 }
 function getInputs() {
     let githubWorkspacePath = process.env['GITHUB_WORKSPACE'];
     if (!githubWorkspacePath) {
-        throw new Error('$GITHUB_WORKSPACE not defined');
+        throw new errors_1.ConfigError('$GITHUB_WORKSPACE not defined');
     }
     githubWorkspacePath = path.resolve(githubWorkspacePath);
     const repositoryPath = core.getInput('repository');
@@ -33196,10 +33197,6 @@ class ReleaseDownloader {
                     return;
                 }
                 const stats = fs.statSync(outFilePath);
-                if (stats.size === 0) {
-                    reject(new errors_1.ReleaseDownloaderError(`Downloaded file '${fileName}' is empty (0 bytes)`, { fileName, outFilePath }));
-                    return;
-                }
                 core.info(`Downloaded ${fileName} (${stats.size} bytes)`);
                 resolve(outFilePath);
             });
