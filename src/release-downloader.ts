@@ -341,15 +341,6 @@ export class ReleaseDownloader {
           return
         }
         const stats = fs.statSync(outFilePath)
-        if (stats.size === 0) {
-          reject(
-            new ReleaseDownloaderError(
-              `Downloaded file '${fileName}' is empty (0 bytes)`,
-              { fileName, outFilePath }
-            )
-          )
-          return
-        }
         core.info(`Downloaded ${fileName} (${stats.size} bytes)`)
         resolve(outFilePath)
       })
