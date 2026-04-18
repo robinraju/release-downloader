@@ -1,7 +1,7 @@
 import * as core from '@actions/core'
 import * as path from 'path'
-import { ConfigError } from './errors'
-import { IReleaseDownloadSettings } from './download-settings'
+import { ConfigError } from './errors.js'
+import { IReleaseDownloadSettings } from './download-settings.js'
 
 function validateRepositoryPath(repositoryPath: string): void {
   const repoParts = repositoryPath.split('/')

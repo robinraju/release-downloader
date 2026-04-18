@@ -5,7 +5,7 @@ import {
   HttpError,
   ReleaseDownloaderError,
   getHttpErrorReason
-} from '../src/errors'
+} from '../src/errors.js'
 
 const expectHttpErrorReason = (
   statusCode: number,

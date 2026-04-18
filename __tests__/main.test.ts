@@ -1,13 +1,16 @@
 import * as fs from 'fs'
 import * as path from 'path'
-import * as handlers from 'typed-rest-client/Handlers'
+import * as handlers from 'typed-rest-client/Handlers.js'
 import * as io from '@actions/io'
-import * as thc from 'typed-rest-client/HttpClient'
+import * as thc from 'typed-rest-client/HttpClient.js'
+import { fileURLToPath } from 'url'
 
-import { IReleaseDownloadSettings } from '../src/download-settings'
-import { ReleaseDownloader } from '../src/release-downloader'
+import { IReleaseDownloadSettings } from '../src/download-settings.js'
+import { ReleaseDownloader } from '../src/release-downloader.js'
 import nock from 'nock'
-import { extract } from '../src/unarchive'
+import { extract } from '../src/unarchive.js'
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
 let downloader: ReleaseDownloader
 let httpClent: thc.HttpClient

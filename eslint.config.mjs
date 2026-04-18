@@ -21,7 +21,9 @@ export default [
       'node_modules/**',
       'test-output/**',
       '*.json',
-      'eslint.config.mjs'
+      'eslint.config.mjs',
+      'jest.config.js',
+      'rollup.config.ts'
     ]
   },
   {
@@ -43,7 +45,13 @@ export default [
       parserOptions: {
         ecmaVersion: 2023,
         sourceType: 'module',
-        project: ['./.github/linters/tsconfig.json', './tsconfig.json'],
+        projectService: {
+          allowDefaultProject: [
+            'eslint.config.mjs',
+            'jest.config.js',
+            'rollup.config.ts'
+          ]
+        },
         tsconfigRootDir: __dirname
       },
       globals: {
@@ -61,6 +69,8 @@ export default [
       'eslint-comments/no-unused-disable': 'off',
       'i18n-text/no-en': 'off',
       'import/no-namespace': 'off',
+      'import/no-unresolved': 'off',
+      'import/extensions': 'off',
       'no-console': 'off',
       'no-unused-vars': 'off',
       'func-call-spacing': ['error', 'never'],

@@ -2,20 +2,20 @@ import * as core from '@actions/core'
 import * as fs from 'fs'
 import * as io from '@actions/io'
 import * as path from 'path'
-import * as thc from 'typed-rest-client/HttpClient'
+import * as thc from 'typed-rest-client/HttpClient.js'
 import { minimatch } from 'minimatch'
 
-import { DownloadMetaData, GithubRelease } from './gh-api'
-import { IHeaders, IHttpClientResponse } from 'typed-rest-client/Interfaces'
+import { DownloadMetaData, GithubRelease } from './gh-api.js'
+import { IHeaders, IHttpClientResponse } from 'typed-rest-client/Interfaces.js'
 
-import { IReleaseDownloadSettings } from './download-settings'
+import { IReleaseDownloadSettings } from './download-settings.js'
 import {
   HttpError,
   AssetNotFoundError,
   ConfigError,
   ReleaseDownloaderError,
   FileNotFoundError
-} from './errors'
+} from './errors.js'
 
 export class ReleaseDownloader {
   private httpClient: thc.HttpClient

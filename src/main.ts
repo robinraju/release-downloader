@@ -1,18 +1,18 @@
 import * as core from '@actions/core'
-import * as handlers from 'typed-rest-client/Handlers'
-import * as inputHelper from './input-helper'
-import * as thc from 'typed-rest-client/HttpClient'
+import * as handlers from 'typed-rest-client/Handlers.js'
+import * as inputHelper from './input-helper.js'
+import * as thc from 'typed-rest-client/HttpClient.js'
 
-import { ReleaseDownloader } from './release-downloader'
-import { extract } from './unarchive'
+import { ReleaseDownloader } from './release-downloader.js'
+import { extract } from './unarchive.js'
 import {
   HttpError,
   FileNotFoundError,
   AssetNotFoundError,
   ConfigError
-} from './errors'
+} from './errors.js'
 
-async function run(): Promise<void> {
+export async function run(): Promise<void> {
   try {
     const downloadSettings = inputHelper.getInputs()
     const authToken = core.getInput('token')
@@ -75,5 +75,3 @@ function handleError(error: unknown): void {
 
   core.setFailed(error instanceof Error ? error.message : String(error))
 }
-
-run()

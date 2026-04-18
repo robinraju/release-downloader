@@ -1,19 +1,20 @@
+import { jest } from '@jest/globals'
 import * as fs from 'fs'
 import * as http from 'http'
 import * as os from 'os'
 import * as path from 'path'
 import { PassThrough } from 'stream'
 
-import * as handlers from 'typed-rest-client/Handlers'
+import * as handlers from 'typed-rest-client/Handlers.js'
 import * as io from '@actions/io'
-import * as thc from 'typed-rest-client/HttpClient'
+import * as thc from 'typed-rest-client/HttpClient.js'
 import nock from 'nock'
 
-import { FileNotFoundError, HttpError } from '../src/errors'
-import { IReleaseDownloadSettings } from '../src/download-settings'
-import { GithubRelease } from '../src/gh-api'
-import { ReleaseDownloader } from '../src/release-downloader'
-import { IHttpClientResponse } from 'typed-rest-client/Interfaces'
+import { FileNotFoundError, HttpError } from '../src/errors.js'
+import { IReleaseDownloadSettings } from '../src/download-settings.js'
+import { GithubRelease } from '../src/gh-api.js'
+import { ReleaseDownloader } from '../src/release-downloader.js'
+import { IHttpClientResponse } from 'typed-rest-client/Interfaces.js'
 
 const createSettings = (
   overrides: Partial<IReleaseDownloadSettings> = {}
