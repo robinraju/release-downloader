@@ -184,3 +184,9 @@ ${{steps.<step-id>.outputs.tag_name}}
     latest: true
     preRelease: true
 ```
+
+## Development notes
+
+`dist/` is CI-managed for this repository. Pull requests should include source,
+tests, and workflow changes only; after a merge to `main`, GitHub Actions
+rebuilds `dist/` and commits the generated bundle back to the branch.

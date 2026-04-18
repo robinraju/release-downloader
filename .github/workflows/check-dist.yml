@@ -1,0 +1,94 @@
+name: Update dist
+
+on:
+  workflow_run:
+    workflows:
+      - Build and Test
+    types:
+      - completed
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+concurrency:
+  group: update-dist-main
+  cancel-in-progress: false
+
+jobs:
+  publish-dist:
+    if: >-
+      ${{
+        github.event.workflow_run.conclusion == 'success' &&
+        github.event.workflow_run.event == 'push'
+      }}
+    name: Publish dist
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      # Skip husky hook installation so the pre-commit hook doesn't
+      # unstage dist/ when the bot intentionally commits the refreshed bundle.
+      HUSKY: 0
+
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v6
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Ensure main is still at the validated commit
+        id: tip-check
+        shell: bash
+        run: |
+          current_head="$(git rev-parse HEAD)"
+          validated_head="${{ github.event.workflow_run.head_sha }}"
+
+          if [ "$current_head" = "$validated_head" ]; then
+            echo "publish=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          echo "publish=false" >> "$GITHUB_OUTPUT"
+          echo "main moved from $validated_head to $current_head; a newer successful Build and Test run will refresh dist."
+
+      - name: Setup Node.js
+        if: steps.tip-check.outputs.publish == 'true'
+        uses: actions/setup-node@v6
+        with:
+          node-version-file: '.node-version'
+          cache: npm
+
+      - name: Install dependencies
+        if: steps.tip-check.outputs.publish == 'true'
+        run: npm ci
+
+      - name: Build dist
+        if: steps.tip-check.outputs.publish == 'true'
+        run: npm run package
+
+      - name: Detect dist changes
+        if: steps.tip-check.outputs.publish == 'true'
+        id: dist-status
+        shell: bash
+        run: |
+          if ! git diff --quiet -- dist/ || \
+            [ -n "$(git ls-files --others --exclude-standard -- dist/)" ]; then
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+            git --no-pager status --short -- dist/
+            exit 0
+          fi
+
+          echo "changed=false" >> "$GITHUB_OUTPUT"
+
+      - name: Commit refreshed dist
+        if: steps.dist-status.outputs.changed == 'true'
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add dist/
+          git commit -m "chore: refresh dist [skip ci]"
+          git push origin HEAD:main

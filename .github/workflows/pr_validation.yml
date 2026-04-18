@@ -1,27 +1,13 @@
-name: 'Build and Test'
+name: pr_validation
 
 on:
-  workflow_dispatch:
-  push:
-    branches:
-      - main
-    tags:
-      - '*'
+  pull_request:
 
 permissions:
   contents: read
 
-env:
-  RELEASE_DOWNLOADER_TEST_TOKEN: ${{ secrets.RELEASE_DOWNLOADER_TEST_TOKEN }}
-
 jobs:
   build:
-    if: >-
-      ${{
-        github.ref != 'refs/heads/main' ||
-        github.actor != 'github-actions[bot]' ||
-        !contains(github.event.head_commit.message, '[skip ci]')
-      }}
     strategy:
       fail-fast: false
       matrix:
@@ -34,6 +20,22 @@ jobs:
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Reject committed dist changes
+        shell: bash
+        run: |
+          # Block humans from committing built artifacts (additions/modifications).
+          dist_changes="$(git diff --name-only --diff-filter=AM \
+            "${{ github.event.pull_request.base.sha }}"..HEAD -- dist)"
+
+          if [ -n "$dist_changes" ]; then
+            echo "dist/ is CI-managed and must not be added or modified in pull requests."
+            echo "Changed dist files:"
+            echo "$dist_changes"
+            exit 1
+          fi
 
       - name: Setup node and cache dependencies
         uses: actions/setup-node@v6
@@ -90,31 +92,7 @@ jobs:
         shell: bash
         run: ls -lrth prerelease-downloads
 
-      - name: Verify private repo token is configured
-        if: ${{ env.RELEASE_DOWNLOADER_TEST_TOKEN == '' }}
-        shell: bash
-        run: |
-          echo "RELEASE_DOWNLOADER_TEST_TOKEN is required for Build and Test runs."
-          exit 1
-
-      - name: Test download from a private repo
-        uses: ./
-        id: download-private
-        with:
-          repository: 'robinraju/release-downloader-test'
-          latest: true
-          fileName: '*'
-          tarBall: true
-          zipBall: true
-          extract: true
-          token: ${{ env.RELEASE_DOWNLOADER_TEST_TOKEN }}
-          out-file-path: './downloader-test'
-
-      - name: List downloaded files from private repo
-        shell: bash
-        run: ls -lrth downloader-test
-
-      - name: Read output variables set by previous steps
+      - name: Read public integration outputs
         shell: bash
         run: |
           if [ -n "${{ steps.download-public.outputs.tag_name }}" ]; then
@@ -124,14 +102,5 @@ jobs:
             exit 1
           fi
 
-          if [ -n "${{ steps.download-private.outputs.tag_name }}" ]; then
-            echo "${{ steps.download-private.outputs.tag_name }}"
-          else
-            echo "Unable to read output variable from step download-private"
-            exit 1
-          fi
-
           echo "Downloaded public files:"
           echo '${{ steps.download-public.outputs.downloaded_files }}'
-          echo "Downloaded private files:"
-          echo '${{ steps.download-private.outputs.downloaded_files }}'

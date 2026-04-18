@@ -3,24 +3,27 @@
   "version": "1.0.0",
   "author": "Robin Raju",
   "license": "MIT",
+  "type": "module",
   "private": true,
   "description": "Github action to download release assets",
   "exports": {
     ".": "./dist/index.js"
   },
   "engines": {
-    "node": ">=20"
+    "node": ">=24.0.0"
   },
   "scripts": {
     "bundle": "npm run format:write && npm run package",
-    "ci-test": "npx jest",
+    "ci-test": "cross-env NODE_OPTIONS=--experimental-vm-modules NODE_NO_WARNINGS=1 npx jest",
     "format:write": "npx prettier --write .",
     "format:check": "npx prettier --check .",
-    "lint": "npx eslint . -c ./.github/linters/.eslintrc.yml",
-    "package": "npx ncc build src/main.ts -o dist --license licenses.txt",
+    "lint": "npx eslint .",
+    "package": "npx rimraf ./dist && npx rollup --config rollup.config.ts --configPlugin \"@rollup/plugin-typescript={sourceMap:false}\"",
     "package:watch": "npm run package -- --watch",
-    "test": "npx jest",
-    "all": "npm run format:write && npm run lint && npm run test && npm run package"
+    "prepare": "husky",
+    "test": "cross-env NODE_OPTIONS=--experimental-vm-modules NODE_NO_WARNINGS=1 npx jest",
+    "all": "npm run format:write && npm run lint && npm run test && npm run package",
+    "verify": "npm run format:check && npm run lint && npm run test && npm run package"
   },
   "repository": {
     "type": "git",
@@ -32,60 +35,38 @@
     "setup",
     "github release download"
   ],
-  "jest": {
-    "preset": "ts-jest",
-    "verbose": true,
-    "clearMocks": true,
-    "testEnvironment": "node",
-    "moduleFileExtensions": [
-      "js",
-      "ts"
-    ],
-    "testMatch": [
-      "**/*.test.ts"
-    ],
-    "testPathIgnorePatterns": [
-      "/node_modules/",
-      "/dist/"
-    ],
-    "transform": {
-      "^.+\\.ts$": "ts-jest"
-    },
-    "coverageReporters": [
-      "json-summary",
-      "text",
-      "lcov"
-    ],
-    "collectCoverage": true,
-    "collectCoverageFrom": [
-      "./src/**"
-    ]
-  },
   "dependencies": {
-    "@actions/core": "^1.11.1",
+    "@actions/core": "^3.0.0",
     "@actions/io": "^1.1.3",
-    "minimatch": "^10.0.1",
+    "minimatch": "^10.2.5",
     "node-stream-zip": "^1.15.0",
-    "tar": "^7.4.3",
+    "tar": "^7.5.13",
     "typed-rest-client": "^2.1.0"
   },
   "devDependencies": {
     "@jest/globals": "^29.7.0",
+    "@rollup/plugin-commonjs": "^28.0.1",
+    "@rollup/plugin-node-resolve": "^15.3.0",
+    "@rollup/plugin-typescript": "^12.1.1",
     "@types/jest": "^29.5.14",
-    "@types/node": "^20.17.23",
-    "@types/tar": "^6.1.13",
-    "@typescript-eslint/eslint-plugin": "^7.18.0",
-    "@typescript-eslint/parser": "^7.18.0",
-    "@vercel/ncc": "^0.38.3",
-    "eslint": "^8.57.1",
-    "eslint-plugin-github": "^5.1.8",
-    "eslint-plugin-jest": "^28.11.0",
-    "eslint-plugin-prettier": "^5.2.3",
+    "@types/node": "^25.6.0",
+    "@types/tar": "^7.0.87",
+    "@typescript-eslint/eslint-plugin": "^8.58.2",
+    "@typescript-eslint/parser": "^8.58.0",
+    "cross-env": "^10.1.0",
+    "eslint": "^9.39.4",
+    "eslint-plugin-github": "^6.0.0",
+    "eslint-plugin-jest": "^29.15.2",
+    "eslint-plugin-prettier": "^5.5.5",
+    "husky": "^9.1.7",
     "jest": "^29.7.0",
-    "nock": "^13.5.6",
-    "prettier": "3.5.3",
-    "prettier-eslint": "^16.3.0",
-    "ts-jest": "^29.2.6",
-    "typescript": "5.8.2"
+    "nock": "^14.0.12",
+    "prettier": "3.8.2",
+    "prettier-eslint": "^16.4.2",
+    "rimraf": "^6.1.3",
+    "rollup": "^4.27.0",
+    "ts-jest": "^29.4.9",
+    "ts-jest-resolver": "^2.0.1",
+    "typescript": "6.0.3"
   }
 }

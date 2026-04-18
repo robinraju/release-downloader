@@ -1,12 +1,18 @@
 import * as core from '@actions/core'
-import * as handlers from 'typed-rest-client/Handlers'
-import * as inputHelper from './input-helper'
-import * as thc from 'typed-rest-client/HttpClient'
+import * as handlers from 'typed-rest-client/Handlers.js'
+import * as inputHelper from './input-helper.js'
+import * as thc from 'typed-rest-client/HttpClient.js'
 
-import { ReleaseDownloader } from './release-downloader'
-import { extract } from './unarchive'
+import { ReleaseDownloader } from './release-downloader.js'
+import { extract } from './unarchive.js'
+import {
+  HttpError,
+  FileNotFoundError,
+  AssetNotFoundError,
+  ConfigError
+} from './errors.js'
 
-async function run(): Promise<void> {
+export async function run(): Promise<void> {
   try {
     const downloadSettings = inputHelper.getInputs()
     const authToken = core.getInput('token')
@@ -32,10 +38,40 @@ async function run(): Promise<void> {
 
     core.info(`Done: ${res}`)
   } catch (error) {
-    if (error instanceof Error) {
-      core.setFailed(error.message)
-    }
+    handleError(error)
   }
 }
 
-run()
+function handleError(error: unknown): void {
+  if (error instanceof HttpError) {
+    core.error(`HTTP Error: ${error.message}`)
+    core.error(`  URL: ${error.url}`)
+    if (error.statusCode === 401 || error.statusCode === 403) {
+      core.error(`  Hint: Verify the 'token' input has appropriate scopes`)
+    }
+    if (error.statusCode === 404) {
+      core.error(`  Hint: Check that the repository, tag, or release ID exists`)
+    }
+  } else if (error instanceof FileNotFoundError) {
+    core.error(`File Error: ${error.message}`)
+    if (error.hint) {
+      core.error(`  Hint: ${error.hint}`)
+    }
+  } else if (error instanceof AssetNotFoundError) {
+    core.error(`Asset not found: ${error.message}`)
+    if (error.availableAssets.length > 0) {
+      core.error(`  Available assets: ${error.availableAssets.join(', ')}`)
+    }
+  } else if (error instanceof ConfigError) {
+    core.error(`Configuration Error: ${error.message}`)
+  } else if (error instanceof Error) {
+    core.error(error.message)
+    if (error.stack) {
+      core.debug(error.stack)
+    }
+  } else {
+    core.error(String(error))
+  }
+
+  core.setFailed(error instanceof Error ? error.message : String(error))
+}
