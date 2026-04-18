@@ -1,9 +1,13 @@
-import * as core from '@actions/core'
+import { jest } from '@jest/globals'
 import * as os from 'os'
 import * as path from 'path'
 
-import { ConfigError } from '../src/errors'
-import { getInputs } from '../src/input-helper'
+import * as core from '../__fixtures__/core.js'
+import { ConfigError } from '../src/errors.js'
+
+jest.unstable_mockModule('@actions/core', () => core)
+
+const { getInputs } = await import('../src/input-helper.js')
 
 describe('getInputs', () => {
   const workspacePath = path.join(os.tmpdir(), 'release-downloader-workspace')
@@ -32,19 +36,17 @@ describe('getInputs', () => {
       extract: false
     }
 
-    jest.spyOn(core, 'getInput').mockImplementation((name: string): string => {
+    core.getInput.mockImplementation((name: string): string => {
       return stringInputs[name] ?? ''
     })
 
-    jest
-      .spyOn(core, 'getBooleanInput')
-      .mockImplementation((name: string): boolean => {
-        return booleanInputs[name] ?? false
-      })
+    core.getBooleanInput.mockImplementation((name: string): boolean => {
+      return booleanInputs[name] ?? false
+    })
   })
 
   afterEach(() => {
-    jest.restoreAllMocks()
+    jest.clearAllMocks()
 
     if (originalWorkspacePath) {
       process.env['GITHUB_WORKSPACE'] = originalWorkspacePath

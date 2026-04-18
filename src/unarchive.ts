@@ -2,9 +2,9 @@ import * as core from '@actions/core'
 import * as fs from 'fs'
 import * as path from 'path'
 import * as tar from 'tar'
-import * as StreamZip from 'node-stream-zip'
+import StreamZip from 'node-stream-zip'
 
-import { FileNotFoundError, ReleaseDownloaderError } from './errors'
+import { FileNotFoundError, ReleaseDownloaderError } from './errors.js'
 
 export const extract = async (
   filePath: string,

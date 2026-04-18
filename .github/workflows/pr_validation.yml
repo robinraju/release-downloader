@@ -26,10 +26,12 @@ jobs:
       - name: Reject committed dist changes
         shell: bash
         run: |
-          dist_changes="$(git diff --name-only "${{ github.event.pull_request.base.sha }}"..HEAD -- dist)"
+          # Block humans from committing built artifacts (additions/modifications).
+          dist_changes="$(git diff --name-only --diff-filter=AM \
+            "${{ github.event.pull_request.base.sha }}"..HEAD -- dist)"
 
           if [ -n "$dist_changes" ]; then
-            echo "dist/ is CI-managed and must not be changed in pull requests."
+            echo "dist/ is CI-managed and must not be added or modified in pull requests."
             echo "Changed dist files:"
             echo "$dist_changes"
             exit 1
