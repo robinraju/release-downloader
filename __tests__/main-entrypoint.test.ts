@@ -30,6 +30,7 @@ const createSettings = (
   zipBall: false,
   extractAssets: false,
   outFilePath: defaultOutputPath,
+  extractPath: defaultOutputPath,
   ...overrides
 })
 
@@ -79,7 +80,8 @@ afterEach(() => {
 test('runs the downloader and extracts every downloaded asset', async () => {
   const settings = createSettings({
     extractAssets: true,
-    outFilePath: extractedOutputPath
+    outFilePath: extractedOutputPath,
+    extractPath: extractedOutputPath
   })
 
   getInputs.mockReturnValue(settings)
@@ -153,7 +155,8 @@ test('logs HTTP not-found errors with a repository hint', async () => {
 test('logs file extraction failures with their hint', async () => {
   const settings = createSettings({
     extractAssets: true,
-    outFilePath: extractedOutputPath
+    outFilePath: extractedOutputPath,
+    extractPath: extractedOutputPath
   })
 
   getInputs.mockReturnValue(settings)

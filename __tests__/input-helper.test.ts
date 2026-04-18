@@ -68,7 +68,8 @@ describe('getInputs', () => {
       tarBall: false,
       zipBall: false,
       extractAssets: false,
-      outFilePath: path.resolve(workspacePath, 'downloads/output')
+      outFilePath: path.resolve(workspacePath, 'downloads/output'),
+      extractPath: path.resolve(workspacePath, 'downloads/output')
     })
   })
 
@@ -78,6 +79,41 @@ describe('getInputs', () => {
     const settings = getInputs()
 
     expect(settings.outFilePath).toBe(workspacePath)
+  })
+
+  test('uses the workspace root for extractPath when both inputs are empty', () => {
+    stringInputs['out-file-path'] = ''
+    stringInputs['extract-path'] = ''
+
+    const settings = getInputs()
+
+    expect(settings.extractPath).toBe(workspacePath)
+    expect(settings.outFilePath).toBe(workspacePath)
+  })
+
+  test('honors an explicit extract-path independently of out-file-path', () => {
+    stringInputs['extract-path'] = 'extracted/assets'
+
+    const settings = getInputs()
+
+    expect(settings.outFilePath).toBe(
+      path.resolve(workspacePath, 'downloads/output')
+    )
+    expect(settings.extractPath).toBe(
+      path.resolve(workspacePath, 'extracted/assets')
+    )
+  })
+
+  test('extract-path overrides out-file-path when both are set', () => {
+    stringInputs['out-file-path'] = 'downloads/output'
+    stringInputs['extract-path'] = 'somewhere/else'
+
+    const settings = getInputs()
+
+    expect(settings.extractPath).toBe(
+      path.resolve(workspacePath, 'somewhere/else')
+    )
+    expect(settings.extractPath).not.toBe(settings.outFilePath)
   })
 
   test('throws a config error when GITHUB_WORKSPACE is missing', () => {

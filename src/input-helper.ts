@@ -41,6 +41,15 @@ export function getInputs(): IReleaseDownloadSettings {
 
   validateReleaseVersion(latestFlag, ghTag, releaseId)
 
+  const outFilePath = path.resolve(
+    githubWorkspacePath,
+    core.getInput('out-file-path') || '.'
+  )
+  const extractPathInput = core.getInput('extract-path')
+  const extractPath = extractPathInput
+    ? path.resolve(githubWorkspacePath, extractPathInput)
+    : outFilePath
+
   return {
     sourceRepoPath: repositoryPath,
     isLatest: latestFlag,
@@ -51,13 +60,7 @@ export function getInputs(): IReleaseDownloadSettings {
     tarBall: core.getBooleanInput('tarBall'),
     zipBall: core.getBooleanInput('zipBall'),
     extractAssets: core.getBooleanInput('extract'),
-    outFilePath: path.resolve(
-      githubWorkspacePath,
-      core.getInput('out-file-path') || '.'
-    ),
-    extractPath: path.resolve(
-      githubWorkspacePath,
-      core.getInput('extract-path') || core.getInput('out-file-path') || '.'
-    )
+    outFilePath,
+    extractPath
   }
 }

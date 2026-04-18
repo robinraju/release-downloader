@@ -28,6 +28,7 @@ const createSettings = (
   tarBall: false,
   zipBall: false,
   extractAssets: false,
+  extractPath: '',
   outFilePath: '',
   ...overrides
 })
