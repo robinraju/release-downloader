@@ -32,7 +32,7 @@ export async function run(): Promise<void> {
 
     if (downloadSettings.extractAssets) {
       for (const asset of res) {
-        await extract(asset, downloadSettings.outFilePath)
+        await extract(asset, downloadSettings.extractPath)
       }
     }
 

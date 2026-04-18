@@ -16,6 +16,7 @@ const config = {
   plugins: [typescript(), nodeResolve({ preferBuiltins: true }), commonjs()],
   onwarn(warning, defaultHandler) {
     if (warning.code === 'CIRCULAR_DEPENDENCY') return
+    if (warning.code === 'THIS_IS_UNDEFINED') return
     defaultHandler(warning)
   }
 }
