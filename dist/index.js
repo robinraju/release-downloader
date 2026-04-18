@@ -40788,6 +40788,11 @@ const extract = async (filePath, destDir) => {
             await zip.extract(null, destDir);
             await zip.close();
         }
+        I.rm(filePath, err => {
+            if (err) {
+                warning(`Failed to delete archive ${filename} after extraction: ${err.message}`);
+            }
+        });
         info(`Extracted ${filename} to ${destDir}`);
     }
     catch (err) {
