@@ -67,6 +67,6 @@
     "rollup": "^4.27.0",
     "ts-jest": "^29.4.9",
     "ts-jest-resolver": "^2.0.1",
-    "typescript": "5.8.2"
+    "typescript": "6.0.3"
   }
 }
