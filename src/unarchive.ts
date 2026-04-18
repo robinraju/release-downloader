@@ -50,7 +50,6 @@ export const extract = async (
       await zip.extract(null, destDir)
       await zip.close()
     }
-    core.info(`Extracted ${filename} to ${destDir}`)
   } catch (err) {
     // Provide context for extraction failures
     const errMsg = err instanceof Error ? err.message : String(err)
@@ -66,6 +65,7 @@ export const extract = async (
       { filePath, destDir }
     )
   }
+  
   await fs.rm(filePath)
   core.info(`Extracted ${filename} to ${destDir}`)
 }
