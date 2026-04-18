@@ -1,12 +1,22 @@
-import * as core from '@actions/core'
+import { jest } from '@jest/globals'
 import * as fs from 'fs'
 import * as os from 'os'
 import * as path from 'path'
 import * as tar from 'tar'
 import * as io from '@actions/io'
+import { fileURLToPath } from 'url'
 
-import { FileNotFoundError } from '../src/errors'
-import { extract } from '../src/unarchive'
+import * as core from '../__fixtures__/core.js'
+import { FileNotFoundError } from '../src/errors.js'
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url))
+
+const tarX = jest.fn<typeof tar.x>(tar.x as never)
+
+jest.unstable_mockModule('@actions/core', () => core)
+jest.unstable_mockModule('tar', () => ({ ...tar, x: tarX }))
+
+const { extract } = await import('../src/unarchive.js')
 
 const fixturePath = (fileName: string): string =>
   path.join(__dirname, 'resource', 'assets', fileName)
@@ -16,10 +26,11 @@ describe('extract', () => {
 
   beforeEach(() => {
     testRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'release-downloader-'))
+    tarX.mockImplementation(tar.x as never)
   })
 
   afterEach(async () => {
-    jest.restoreAllMocks()
+    jest.clearAllMocks()
     await io.rmRF(testRoot)
   })
 
@@ -49,16 +60,11 @@ describe('extract', () => {
   })
 
   test('warns and skips unsupported files', async () => {
-    const warningSpy = jest
-      .spyOn(core, 'warning')
-      .mockImplementation((message): void => {
-        void message
-      })
     const destination = path.join(testRoot, 'unsupported-output')
 
     await extract(fixturePath('test-1.txt'), destination)
 
-    expect(warningSpy).toHaveBeenCalledWith(
+    expect(core.warning).toHaveBeenCalledWith(
       'The file test-1.txt is not a supported archive. It will be skipped'
     )
     expect(fs.existsSync(destination)).toBe(false)
@@ -74,7 +80,7 @@ describe('extract', () => {
     const tarPath = path.join(testRoot, 'broken.tar')
 
     fs.writeFileSync(tarPath, 'not a tar archive')
-    jest.spyOn(tar, 'x').mockRejectedValue(new Error('bad archive'))
+    tarX.mockRejectedValue(new Error('bad archive') as never)
 
     await expect(
       extract(tarPath, path.join(testRoot, 'broken-output'))
@@ -88,11 +94,9 @@ describe('extract', () => {
     const tarPath = path.join(testRoot, 'missing-during-extract.tar')
 
     fs.writeFileSync(tarPath, 'placeholder content')
-    jest
-      .spyOn(tar, 'x')
-      .mockRejectedValue(
-        new Error('ENOENT: file disappeared during extraction')
-      )
+    tarX.mockRejectedValue(
+      new Error('ENOENT: file disappeared during extraction') as never
+    )
 
     await expect(
       extract(tarPath, path.join(testRoot, 'enoent-output'))

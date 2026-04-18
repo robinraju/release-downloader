@@ -1,0 +1,13 @@
+# Unstage any changes to dist/ - it is CI-managed and must not be committed manually.
+staged_dist="$(git diff --cached --name-only -- dist)"
+
+if [ -n "$staged_dist" ]; then
+  git reset HEAD -- dist >/dev/null
+
+  echo "✖ Refusing to commit changes under dist/ (CI-managed)."
+  echo "  The following files have been unstaged:"
+  echo "$staged_dist" | sed 's/^/    /'
+  echo
+  echo "  Re-run your commit. Working-tree files were left untouched."
+  exit 1
+fi

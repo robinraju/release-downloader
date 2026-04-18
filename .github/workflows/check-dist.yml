@@ -27,6 +27,10 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+    env:
+      # Skip husky hook installation so the pre-commit hook doesn't
+      # unstage dist/ when the bot intentionally commits the refreshed bundle.
+      HUSKY: 0
 
     steps:
       - name: Checkout main
