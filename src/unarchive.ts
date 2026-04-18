@@ -50,6 +50,15 @@ export const extract = async (
       await zip.extract(null, destDir)
       await zip.close()
     }
+
+    fs.rm(filePath, err => {
+      if (err) {
+        core.warning(
+          `Failed to delete archive ${filename} after extraction: ${err.message}`
+        )
+      }
+    })
+    core.info(`Extracted ${filename} to ${destDir}`)
   } catch (err) {
     // Provide context for extraction failures
     const errMsg = err instanceof Error ? err.message : String(err)
@@ -65,7 +74,4 @@ export const extract = async (
       { filePath, destDir }
     )
   }
-  
-  await fs.rm(filePath)
-  core.info(`Extracted ${filename} to ${destDir}`)
 }

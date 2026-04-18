@@ -36,8 +36,10 @@ describe('extract', () => {
 
   test('extracts a tar.gz archive into a created destination directory', async () => {
     const destination = path.join(testRoot, 'tar-gz-output')
+    const archivePath = path.join(testRoot, 'tar-zip-ball-only-repo.tar.gz')
+    fs.copyFileSync(fixturePath('tar-zip-ball-only-repo.tar.gz'), archivePath)
 
-    await extract(fixturePath('tar-zip-ball-only-repo.tar.gz'), destination)
+    await extract(archivePath, destination)
 
     expect(fs.existsSync(destination)).toBe(true)
     expect(fs.readdirSync(destination).length).toBeGreaterThan(0)
