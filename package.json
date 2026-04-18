@@ -20,6 +20,7 @@
     "lint": "npx eslint .",
     "package": "npx rimraf ./dist && npx rollup --config rollup.config.ts --configPlugin \"@rollup/plugin-typescript={sourceMap:false}\"",
     "package:watch": "npm run package -- --watch",
+    "prepare": "husky",
     "test": "NODE_OPTIONS=--experimental-vm-modules NODE_NO_WARNINGS=1 npx jest",
     "all": "npm run format:write && npm run lint && npm run test && npm run package",
     "verify": "npm run format:check && npm run lint && npm run test && npm run package"
@@ -56,6 +57,7 @@
     "eslint-plugin-github": "^6.0.0",
     "eslint-plugin-jest": "^29.15.2",
     "eslint-plugin-prettier": "^5.5.5",
+    "husky": "^9.1.7",
     "jest": "^29.7.0",
     "nock": "^14.0.12",
     "prettier": "3.8.2",
