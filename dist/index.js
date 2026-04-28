@@ -35383,10 +35383,10 @@ function requireParse () {
 	    var limit = options.parameterLimit === Infinity ? void undefined : options.parameterLimit;
 	    var parts = cleanStr.split(
 	        options.delimiter,
-	        options.throwOnLimitExceeded ? limit + 1 : limit
+	        options.throwOnLimitExceeded && typeof limit !== 'undefined' ? limit + 1 : limit
 	    );
 
-	    if (options.throwOnLimitExceeded && parts.length > limit) {
+	    if (options.throwOnLimitExceeded && typeof limit !== 'undefined' && parts.length > limit) {
 	        throw new RangeError('Parameter limit exceeded. Only ' + limit + ' parameter' + (limit === 1 ? '' : 's') + ' allowed.');
 	    }
 
