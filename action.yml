@@ -24,8 +24,8 @@ inputs:
     required: false
   fileName:
     description:
-      "Name of the file to download (use '*' to download all assets other than
-      tarball or zipball)"
+      "Name of the file to download. Supports minimatch patterns (e.g., '*',
+      '*.deb', '{a.txt,b.txt}'). See https://github.com/isaacs/minimatch"
     default: ''
     required: false
   tarBall:

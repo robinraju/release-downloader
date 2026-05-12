@@ -292,6 +292,49 @@ test('Download a csv file with wildcard filename', async () => {
   expect(result.length).toBe(1)
 }, 10000)
 
+test('Download files with brace expansion pattern', async () => {
+  const downloadSettings: IReleaseDownloadSettings = {
+    sourceRepoPath: 'robinraju/probable-potato',
+    isLatest: true,
+    preRelease: false,
+    tag: '',
+    id: '',
+    fileName: '{test-1.txt,test-2.txt}',
+    tarBall: false,
+    zipBall: false,
+    extractAssets: false,
+    outFilePath: outputFilePath,
+    extractPath: outputFilePath
+  }
+  const result = await downloader.download(downloadSettings)
+  expect(result.length).toBe(2)
+  expect(result).toEqual(
+    expect.arrayContaining([
+      expect.stringContaining('test-1.txt'),
+      expect.stringContaining('test-2.txt')
+    ])
+  )
+}, 10000)
+
+test('Download file with single character wildcard', async () => {
+  const downloadSettings: IReleaseDownloadSettings = {
+    sourceRepoPath: 'robinraju/probable-potato',
+    isLatest: true,
+    preRelease: false,
+    tag: '',
+    id: '',
+    fileName: '?-test.txt',
+    tarBall: false,
+    zipBall: false,
+    extractAssets: false,
+    outFilePath: outputFilePath,
+    extractPath: outputFilePath
+  }
+  const result = await downloader.download(downloadSettings)
+  expect(result.length).toBe(1)
+  expect(result[0]).toContain('3-test.txt')
+}, 10000)
+
 test('Download file from Github Enterprise server', async () => {
   downloader = new ReleaseDownloader(httpClent, 'https://my-gh-host.com/api/v3')
 

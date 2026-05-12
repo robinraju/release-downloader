@@ -32,7 +32,8 @@ specified files from both private and public repositories.
 
     # The name of the file to download.
     # Use this field only to specify filenames other than tarball or zipball, if any.
-    # Supports wildcard pattern (eg: '*', '*.deb', '*.zip' etc..)
+    # Supports minimatch patterns (eg: '*', '*.deb', '*.zip', '{a.txt,b.txt}', 'file-?.txt')
+    # See https://github.com/isaacs/minimatch for pattern syntax
     fileName: ''
 
     # Download the attached tarball (*.tar.gz)
@@ -153,12 +154,29 @@ ${{steps.<step-id>.outputs.tag_name}}
 
 ### Download assets using wildcard pattern
 
+The `fileName` input supports [minimatch](https://github.com/isaacs/minimatch) patterns for flexible file matching.
+
 ```yaml
+# Download all .deb files
 - uses: robinraju/release-downloader@v1
   with:
     repository: 'owner/repo'
     latest: true
     fileName: '*.deb'
+
+# Download specific files using brace expansion
+- uses: robinraju/release-downloader@v1
+  with:
+    repository: 'owner/repo'
+    latest: true
+    fileName: '{installer.exe,setup.msi,package.dmg}'
+
+# Download files with single character wildcard
+- uses: robinraju/release-downloader@v1
+  with:
+    repository: 'owner/repo'
+    latest: true
+    fileName: 'file-?.txt'
 ```
 
 ### Download a release using its id
