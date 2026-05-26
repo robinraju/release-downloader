@@ -35,7 +35,6 @@ import require$$5$3 from 'string_decoder';
 import 'child_process';
 import 'timers';
 import require$$1$6, { Buffer as Buffer$1 } from 'buffer';
-import require$$4 from 'url';
 import * as vs from 'zlib';
 import vs__default from 'zlib';
 import { StringDecoder } from 'node:string_decoder';
@@ -32260,7 +32259,8 @@ function requireNtlm$1 () {
 
 		exports$1.responseHeader = function (res, url, domain, username, password) {
 		  var serverNonce = Buffer.from((res.headers['www-authenticate'].match(/^NTLM\s+(.+?)(,|\s+|$)/) || [])[1], 'base64');
-		  var hostname = require$$4.parse(url).hostname;
+		  var parsedUrl = new URL(url);
+		  var hostname = parsedUrl.hostname;
 		  return 'NTLM ' + exports$1.encodeType3(username, hostname, domain, exports$1.decodeType2(serverNonce), password).toString('base64')
 		};
 
@@ -35744,8 +35744,6 @@ function requireUtil () {
 	Util.buildProxyBypassRegexFromEnv = buildProxyBypassRegexFromEnv;
 	Util.obtainContentCharset = obtainContentCharset;
 	const qs = /*@__PURE__*/ requireLib();
-	const url = require$$4;
-	const path = path__default;
 	const zlib = vs__default;
 	/**
 	 * creates an url from a request url and optional base url (http://server:8080)
@@ -35755,7 +35753,6 @@ function requireUtil () {
 	 * @return {string} - resultant url
 	 */
 	function getUrl(resource, baseUrl, queryParams) {
-	    const pathApi = path.posix || path;
 	    let requestUrl = '';
 	    if (!baseUrl) {
 	        requestUrl = resource;
@@ -35764,17 +35761,17 @@ function requireUtil () {
 	        requestUrl = baseUrl;
 	    }
 	    else {
-	        const base = url.parse(baseUrl);
-	        const resultantUrl = url.parse(resource);
-	        // resource (specific per request) elements take priority
-	        resultantUrl.protocol = resultantUrl.protocol || base.protocol;
-	        resultantUrl.auth = resultantUrl.auth || base.auth;
-	        resultantUrl.host = resultantUrl.host || base.host;
-	        resultantUrl.pathname = pathApi.resolve(base.pathname, resultantUrl.pathname);
+	        const effectiveBase = new URL(baseUrl);
+	        // Ensure the base path is treated as a directory so relative resource paths
+	        // append to it without corrupting any existing query string or fragment.
+	        if (!effectiveBase.pathname.endsWith('/')) {
+	            effectiveBase.pathname += '/';
+	        }
+	        const resultantUrl = new URL(resource, effectiveBase.href);
 	        if (!resultantUrl.pathname.endsWith('/') && resource.endsWith('/')) {
 	            resultantUrl.pathname += '/';
 	        }
-	        requestUrl = url.format(resultantUrl);
+	        requestUrl = resultantUrl.href;
 	    }
 	    return queryParams ?
 	        getUrlWithParsedQueryParams(requestUrl, queryParams) :
@@ -35895,7 +35892,6 @@ function requireHttpClient () {
 	Object.defineProperty(HttpClient, "__esModule", { value: true });
 	HttpClient.HttpClient = HttpClient.HttpClientResponse = HttpClient.HttpCodes = void 0;
 	HttpClient.isHttps = isHttps;
-	const url = require$$4;
 	const http$1 = http;
 	const https$1 = https;
 	const util = requireUtil();
@@ -35971,7 +35967,7 @@ function requireHttpClient () {
 	}
 	HttpClient.HttpClientResponse = HttpClientResponse;
 	function isHttps(requestUrl) {
-	    let parsedUrl = url.parse(requestUrl);
+	    const parsedUrl = new URL(requestUrl);
 	    return parsedUrl.protocol === 'https:';
 	}
 	var EnvironmentVariables;
@@ -36088,7 +36084,7 @@ function requireHttpClient () {
 	            if (this._disposed) {
 	                throw new Error("Client has already been disposed.");
 	            }
-	            let parsedUrl = url.parse(requestUrl);
+	            const parsedUrl = new URL(requestUrl);
 	            let info = this._prepareRequest(verb, parsedUrl, headers);
 	            // Only perform retries on reads since writes may not be idempotent.
 	            let maxTries = (this._allowRetries && RetryableHttpVerbs.indexOf(verb) != -1) ? this._maxRetries + 1 : 1;
@@ -36133,7 +36129,7 @@ function requireHttpClient () {
 	                        // if there's no location to redirect to, we won't
 	                        break;
 	                    }
-	                    let parsedRedirectUrl = url.parse(redirectUrl);
+	                    const parsedRedirectUrl = new URL(redirectUrl, parsedUrl.href);
 	                    if (parsedUrl.protocol == 'https:' && parsedUrl.protocol != parsedRedirectUrl.protocol && !this._allowRedirectDowngrade) {
 	                        throw new Error("Redirect from HTTPS to HTTP protocol. This downgrade is not allowed for security reasons. If you want to allow this behavior, set the allowRedirectDowngrade option to true.");
 	                    }
@@ -36236,13 +36232,13 @@ function requireHttpClient () {
 	    _prepareRequest(method, requestUrl, headers) {
 	        const info = {};
 	        info.parsedUrl = requestUrl;
-	        const usingSsl = info.parsedUrl.protocol === 'https:';
+	        const usingSsl = requestUrl.protocol === 'https:';
 	        info.httpModule = usingSsl ? https$1 : http$1;
 	        const defaultPort = usingSsl ? 443 : 80;
 	        info.options = {};
-	        info.options.host = info.parsedUrl.hostname;
-	        info.options.port = info.parsedUrl.port ? parseInt(info.parsedUrl.port) : defaultPort;
-	        info.options.path = (info.parsedUrl.pathname || '') + (info.parsedUrl.search || '');
+	        info.options.host = requestUrl.hostname;
+	        info.options.port = requestUrl.port ? parseInt(requestUrl.port) : defaultPort;
+	        info.options.path = requestUrl.pathname + requestUrl.search;
 	        info.options.method = method;
 	        info.options.timeout = (this.requestOptions && this.requestOptions.socketTimeout) || this._socketTimeout;
 	        this._socketTimeout = info.options.timeout;
@@ -36250,9 +36246,9 @@ function requireHttpClient () {
 	        if (this.userAgent != null) {
 	            info.options.headers["user-agent"] = this.userAgent;
 	        }
-	        info.options.agent = this._getAgent(info.parsedUrl);
+	        info.options.agent = this._getAgent(requestUrl);
 	        // gives handlers an opportunity to participate
-	        if (this.handlers && !this._isPresigned(url.format(requestUrl))) {
+	        if (this.handlers && !this._isPresigned(requestUrl.href)) {
 	            this.handlers.forEach((handler) => {
 	                handler.prepareRequest(info.options);
 	            });
@@ -36307,7 +36303,7 @@ function requireHttpClient () {
 	                proxy: {
 	                    proxyAuth: proxy.proxyAuth,
 	                    host: proxy.proxyUrl.hostname,
-	                    port: proxy.proxyUrl.port
+	                    port: Number(proxy.proxyUrl.port) || (proxy.proxyUrl.protocol === 'https:' ? 443 : 80)
 	                },
 	            };
 	            let tunnelAgent;
@@ -36368,7 +36364,7 @@ function requireHttpClient () {
 	        let proxyAuth;
 	        if (proxyConfig) {
 	            if (proxyConfig.proxyUrl.length > 0) {
-	                proxyUrl = url.parse(proxyConfig.proxyUrl);
+	                proxyUrl = new URL(proxyConfig.proxyUrl);
 	            }
 	            if (proxyConfig.proxyUsername || proxyConfig.proxyPassword) {
 	                proxyAuth = proxyConfig.proxyUsername + ":" + proxyConfig.proxyPassword;
