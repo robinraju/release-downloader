@@ -304,7 +304,11 @@ export class ReleaseDownloader {
     fileName: string,
     httpClientResponse: IHttpClientResponse
   ): Promise<string> {
-    const outFilePath: string = path.resolve(outputPath, fileName)
+    // Collapse the asset name to its base file name to prevent path traversal
+    // (CWE-22): a crafted release asset named like "../../foo" must not let the
+    // download escape the target directory. Asset names are file names, not paths.
+    const safeFileName: string = path.basename(fileName)
+    const outFilePath: string = path.resolve(outputPath, safeFileName)
     const fileStream: fs.WriteStream = fs.createWriteStream(outFilePath)
 
     return new Promise((resolve, reject) => {
