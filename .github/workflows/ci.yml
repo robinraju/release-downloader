@@ -33,7 +33,7 @@ jobs:
 
     steps:
       - name: Checkout Repo
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Setup node and cache dependencies
         uses: actions/setup-node@v6
