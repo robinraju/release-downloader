@@ -40,7 +40,7 @@
     "@actions/io": "^3.0.2",
     "minimatch": "^10.2.5",
     "node-stream-zip": "^1.15.0",
-    "tar": "^7.5.19",
+    "tar": "^7.5.20",
     "typed-rest-client": "^3.0.0"
   },
   "devDependencies": {
