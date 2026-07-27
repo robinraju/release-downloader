@@ -39,7 +39,7 @@
     "@actions/core": "^3.0.1",
     "@actions/io": "^3.0.2",
     "minimatch": "^10.2.5",
-    "node-stream-zip": "^1.15.0",
+    "node-stream-zip": "^1.16.0",
     "tar": "^7.5.20",
     "typed-rest-client": "^3.0.0"
   },
