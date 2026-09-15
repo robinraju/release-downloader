@@ -90,9 +90,11 @@ test('runs the downloader and extracts every downloaded asset', async () => {
   await run()
 
   expect(bearerCredentialHandler).toHaveBeenCalledWith('test-token', false)
-  expect(httpClientConstructor).toHaveBeenCalledWith('gh-api-client', [
-    expect.any(Object)
-  ])
+  expect(httpClientConstructor).toHaveBeenCalledWith(
+    'gh-api-client',
+    [expect.any(Object)],
+    { presignedUrlPatterns: [/\/storage\/releases\//, /\/_codeload\//] }
+  )
   expect(releaseDownloaderConstructor).toHaveBeenCalledWith(
     expect.any(Object),
     'https://api.github.com'
