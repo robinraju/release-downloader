@@ -12,6 +12,11 @@ import {
   ConfigError
 } from './errors.js'
 
+const PRESIGNED_URL_PATTERNS = [
+  /\/storage\/releases\//, // release assets
+  /\/_codeload\// // tarBall and zipBall
+]
+
 export async function run(): Promise<void> {
   try {
     const downloadSettings = inputHelper.getInputs()
@@ -22,9 +27,11 @@ export async function run(): Promise<void> {
       authToken,
       false
     )
-    const httpClient: thc.HttpClient = new thc.HttpClient('gh-api-client', [
-      credentialHandler
-    ])
+    const httpClient: thc.HttpClient = new thc.HttpClient(
+      'gh-api-client',
+      [credentialHandler],
+      { presignedUrlPatterns: PRESIGNED_URL_PATTERNS }
+    )
 
     const downloader = new ReleaseDownloader(httpClient, githubApiUrl)
 
