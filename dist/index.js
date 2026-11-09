@@ -37835,6 +37835,78 @@ function expand_(str, max, maxLength, maxDepth, depth, maxRewrites, isTop) {
     return acc;
 }
 
+// One digit, or a class of digits from a to b.
+const digit = (a, b) => a === b ?
+    { t: 'lit', ch: String(a) }
+    : { t: 'class', re: new RegExp(`^[${a}-${b}]$`) };
+const prefix = (d, alts) => alts.map(s => [digit(d, d), ...s]);
+// The digit strings from a to b, which have the same length.
+const fixed = (a, b) => {
+    if (!a)
+        return [[]];
+    let lo = +a[0];
+    let hi = +b[0];
+    const ra = a.slice(1);
+    const rb = b.slice(1);
+    if (lo === hi)
+        return prefix(lo, fixed(ra, rb));
+    const zeros = '0'.repeat(ra.length);
+    const nines = '9'.repeat(ra.length);
+    const out = [];
+    if (ra !== zeros)
+        out.push(...prefix(lo++, fixed(ra, nines)));
+    const last = rb === nines ? [] : prefix(hi--, fixed(zeros, rb));
+    if (lo <= hi) {
+        out.push([digit(lo, hi), ...Array.from(ra, () => digit(0, 9))]);
+    }
+    out.push(...last);
+    return out;
+};
+// The numbers from a to b, where 0 <= a <= b. If width is set, each
+// one has leading zeros to make it that many digits.
+const nonneg = (a, b, width) => {
+    if (width) {
+        return fixed(String(a).padStart(width, '0'), String(b).padStart(width, '0'));
+    }
+    const out = [];
+    for (let len = String(a).length; len <= String(b).length; len++) {
+        const lo = Math.max(a, len === 1 ? 0 : 10 ** (len - 1));
+        const hi = Math.min(b, 10 ** len - 1);
+        out.push(...fixed(String(lo), String(hi)));
+    }
+    return out;
+};
+/**
+ * The strings that the bash brace expansion `{lo..hi}` makes, as
+ * the alternatives of an `@(...)` extglob. Each one is a sequence of
+ * digits and digit classes, so there are only a few of them, even for
+ * a large range.
+ *
+ * If either end has a leading zero, such as `{01..10}`, each number
+ * has leading zeros to make it as long as the longer end, counting a
+ * `-` sign. So `{-05..3}` makes `-05` to `-01`, then `000` to `003`.
+ *
+ * Returns undefined if either end is not a safe integer.
+ */
+const numericRange = (loStr, hiStr) => {
+    let lo = Number(loStr);
+    let hi = Number(hiStr);
+    if (!Number.isSafeInteger(lo) || !Number.isSafeInteger(hi))
+        return;
+    if (lo > hi)
+        [lo, hi] = [hi, lo];
+    const padded = /^-?0\d/.test(loStr) || /^-?0\d/.test(hiStr);
+    const width = padded ? Math.max(loStr.length, hiStr.length) : 0;
+    const out = [];
+    if (lo < 0) {
+        const neg = nonneg(Math.max(-hi, 1), -lo, width && width - 1);
+        out.push(...neg.map(s => [{ t: 'lit', ch: '-' }, ...s]));
+    }
+    if (hi >= 0)
+        out.push(...nonneg(Math.max(lo, 0), hi, width));
+    return out;
+};
+
 // translate the various posix character classes into unicode properties
 // this works across all unicode locales
 // { <posix class>: [<translation>, negated]
@@ -38006,10 +38078,25 @@ const litMatch = (l, c) => {
     ascii[code] ||= l.re.test(c) ? 1 : 2;
     return ascii[code] === 1;
 };
-const tokenize = (p, nocase, noext, form) => {
+const tokenize = (p, nocase, noext, form, mark) => {
     const toks = [];
     for (let i = 0; i < p.length;) {
         const c = String.fromCodePoint(p.codePointAt(i));
+        if (mark) {
+            // a \ before a range would only escape its first char
+            const m = c === '\\' && p.startsWith(mark, i + 1) ? 1 : 0;
+            if (m || c === mark) {
+                const start = i + m + mark.length;
+                const end = p.indexOf(mark, start);
+                const r = /^(-?\d+)\.\.(-?\d+)$/.exec(p.slice(start, end));
+                const alts = end !== -1 && r && numericRange(r[1], r[2]);
+                if (alts) {
+                    toks.push({ t: 'ext', type: '@', alts });
+                    i = end + mark.length;
+                    continue;
+                }
+            }
+        }
         if (c === '\\') {
             // a trailing \ is a literal \
             const e = p.codePointAt(i + 1);
@@ -38576,7 +38663,7 @@ class Matcher {
         // a pattern that is only an empty extglob is a literal string,
         // except for `!()`, which matches any non-empty string
         const literal = /^[?*+@]\(\)$/.test(pattern);
-        const toks = tokenize(pattern, nocase, noext || literal, this.#form);
+        const toks = tokenize(pattern, nocase, noext || literal, this.#form, options.rangeMark);
         let [items] = build(toks, pair(toks), 0, toks.length, true);
         if (this.#form)
             items = normalize(items, this.#form);
@@ -38892,6 +38979,12 @@ const braceExpand = (pattern, options = {}) => {
     return expand(pattern, { max: options.braceExpandMax });
 };
 minimatch.braceExpand = braceExpand;
+// A numeric range with at least this many values is matched as one
+// pattern portion, rather than expanded. For a glob walk, that is
+// one directory read, in place of a stat for each value.
+const RANGE_MIN = 100;
+// a {lo..hi} range that is not escaped, and not a ${...} variable
+const rangeRe = /(?<![\\$])\{(-?\d+)\.\.(-?\d+)\}/g;
 const match = (list, pattern, options = {}) => {
     const mm = new Minimatch(pattern, options);
     list = list.filter(f => mm.match(f));
@@ -39133,6 +39226,8 @@ class Minimatch {
     #matchers = new Map();
     // parse() returns PENDING in place of a Matcher
     #pending = false;
+    // the char that marks numeric ranges in globSet, if any
+    #rangeMark;
     // the GlobstarParts of each pattern row, by start index and partial
     #globstarParts = new WeakMap();
     constructor(pattern, options = {}) {
@@ -39267,7 +39362,7 @@ class Minimatch {
         // step 1: figure out negation, etc.
         this.parseNegate();
         // step 2: expand braces
-        this.globSet = [...new Set(this.braceExpand())];
+        this.globSet = [...new Set(this.#expandBraces())];
         // step 3: now we have a set, so turn each one into a series of
         // path-portion matching patterns.
         // These will be Matchers, except in the case of "**", which is
@@ -39719,8 +39814,13 @@ class Minimatch {
     // **/*/<rest> -> */**/<rest> <== not valid because ** doesn't follow
     // this WOULD be allowed if ** did follow symlinks, or * didn't
     firstPhasePreProcess(globParts) {
-        // each **/.. split doubles the patterns, so stop at the brace max
+        // each **/.. split doubles the patterns, and adds a copy of the
+        // whole pattern. Throw if either gets too large. A partial split
+        // would match some paths and not others, depending on which rows
+        // the pass reached first.
         const { braceExpandMax = 100_000 } = this.options;
+        let splitCells = 0;
+        const maxSplitCells = 1_000_000;
         let didSomething = false;
         do {
             didSomething = false;
@@ -39748,15 +39848,21 @@ class Minimatch {
                         p === '..' ||
                         !p2 ||
                         p2 === '.' ||
-                        p2 === '..' ||
-                        globParts.length >= braceExpandMax) {
+                        p2 === '..') {
                         continue;
+                    }
+                    // Check before changing parts or allocating the new row.
+                    const addedCells = parts.length - 1;
+                    if (globParts.length >= braceExpandMax ||
+                        splitCells + addedCells > maxSplitCells) {
+                        throw new RangeError(`optimizationLevel 2: too many patterns from '**/..'`);
                     }
                     didSomething = true;
                     // edit parts in place, and push the new one
                     parts.splice(gs, 1);
                     const other = parts.slice(0);
                     other[gs] = '**';
+                    splitCells += addedCells;
                     globParts.push(other);
                     gs--;
                 }
@@ -39801,77 +39907,59 @@ class Minimatch {
         return globParts;
     }
     // second phase: multi-pattern dedupes
-    // {<pre>/*/<rest>,<pre>/<p>/<rest>} -> <pre>/*/<rest>
     // {<pre>/<rest>,<pre>/<rest>} -> <pre>/<rest>
-    // {<pre>/**/<rest>,<pre>/<rest>} -> <pre>/**/<rest>
-    //
-    // {<pre>/**/<rest>,<pre>/**/<p>/<rest>} -> <pre>/**/<rest>
-    // ^-- not valid because ** doens't follow symlinks
+    // {<pre>/*/<rest>,<pre>/<p>/<rest>} -> <pre>/*/<rest>
     secondPhasePreProcess(globParts) {
-        // each pattern is compared to each other one, so skip this for
-        // large sets. The patterns match the same paths either way.
-        if (globParts.length > 1000)
-            return globParts;
-        for (let i = 0; i < globParts.length - 1; i++) {
-            for (let j = i + 1; j < globParts.length; j++) {
-                const matched = this.partsMatch(globParts[i], globParts[j], !this.preserveMultipleSlashes);
-                if (matched) {
-                    globParts[i] = [];
-                    globParts[j] = matched;
-                    break;
-                }
-            }
-        }
-        return globParts.filter(gs => gs.length);
-    }
-    partsMatch(a, b, emptyGSMatch = false) {
-        let ai = 0;
-        let bi = 0;
-        let result = [];
-        let which = '';
-        while (ai < a.length && bi < b.length) {
-            if (a[ai] === b[bi]) {
-                result.push(which === 'b' ? b[bi] : a[ai]);
-                ai++;
-                bi++;
-            }
-            else if (emptyGSMatch && a[ai] === '**' && b[bi] === a[ai + 1]) {
-                result.push(a[ai]);
-                ai++;
-            }
-            else if (emptyGSMatch && b[bi] === '**' && a[ai] === b[bi + 1]) {
-                result.push(b[bi]);
-                bi++;
-            }
-            else if (a[ai] === '*' &&
-                b[bi] &&
-                (this.options.dot || !b[bi].startsWith('.')) &&
-                b[bi] !== '**') {
-                if (which === 'b')
-                    return false;
-                which = 'a';
-                result.push(a[ai]);
-                ai++;
-                bi++;
-            }
-            else if (b[bi] === '*' &&
-                a[ai] &&
-                (this.options.dot || !a[ai].startsWith('.')) &&
-                a[ai] !== '**') {
-                if (which === 'a')
-                    return false;
-                which = 'b';
-                result.push(b[bi]);
-                ai++;
-                bi++;
-            }
-            else {
+        const keys = new Set();
+        const rows = globParts.filter(parts => {
+            const key = parts.join('/');
+            if (keys.has(key))
                 return false;
+            keys.add(key);
+            return true;
+        });
+        // A row is covered by another row that has `*` at some positions,
+        // and is the same at all others. Collect each distinct set of `*`
+        // positions, then look up each row with `*` put at those positions.
+        const stars = new Map();
+        for (const parts of rows) {
+            const s = [];
+            for (let i = 0; i < parts.length; i++) {
+                if (parts[i] === '*')
+                    s.push(i);
             }
+            if (s.length)
+                stars.set(s.join(','), s);
         }
-        // if we fall out of the loop, it means they two are identical
-        // as long as their lengths match
-        return a.length === b.length && result;
+        // Each row is checked against each set of `*` positions, so skip
+        // this if there are too many. The patterns match the same paths
+        // either way.
+        if (!stars.size || rows.length * stars.size > 100_000)
+            return rows;
+        const { dot } = this.options;
+        return rows.filter(parts => {
+            for (const s of stars.values()) {
+                if (s[s.length - 1] >= parts.length)
+                    continue;
+                const c = [...parts];
+                let ok = true;
+                let changed = false;
+                for (const i of s) {
+                    const p = parts[i];
+                    if (p === '*')
+                        continue;
+                    if (!p || p === '**' || (!dot && p.startsWith('.'))) {
+                        ok = false;
+                        break;
+                    }
+                    c[i] = '*';
+                    changed = true;
+                }
+                if (ok && changed && keys.has(c.join('/')))
+                    return false;
+            }
+            return true;
+        });
     }
     parseNegate() {
         if (this.nonegate)
@@ -40205,6 +40293,46 @@ class Minimatch {
     braceExpand() {
         return braceExpand(this.pattern, this.options);
     }
+    // Expand braces, except numeric ranges such as {0..999} with at
+    // least RANGE_MIN values. Each of those stays in its pattern as
+    // `<mark>0..999<mark>`, for the Matcher to test. If a range might
+    // be inside a [...] class, expand all of them instead.
+    #expandBraces() {
+        const { pattern } = this;
+        if (this.options.nobrace)
+            return this.braceExpand();
+        let code = 0xe000;
+        while (pattern.includes(String.fromCharCode(code))) {
+            if (++code > 0xf8ff)
+                return this.braceExpand();
+        }
+        const mark = String.fromCharCode(code);
+        let found = false;
+        const marked = pattern.replace(rangeRe, (m, lo, hi) => {
+            const a = Number(lo);
+            const b = Number(hi);
+            if (!Number.isSafeInteger(a) ||
+                !Number.isSafeInteger(b) ||
+                Math.abs(a - b) + 1 < RANGE_MIN) {
+                return m;
+            }
+            found = true;
+            return `${mark}${lo}..${hi}${mark}`;
+        });
+        if (!found)
+            return this.braceExpand();
+        const set = braceExpand(marked, this.options);
+        for (const p of set) {
+            for (const portion of p.split('/')) {
+                const c = portion.indexOf('[');
+                if (c !== -1 && c < portion.lastIndexOf(mark)) {
+                    return this.braceExpand();
+                }
+            }
+        }
+        this.#rangeMark = mark;
+        return set;
+    }
     parse(pattern) {
         assertValidPattern(pattern);
         const options = this.options;
@@ -40214,7 +40342,10 @@ class Minimatch {
         if (pattern === '')
             return '';
         const { nocase, nocaseMagicOnly, noext = false, dot, normalize, } = options;
-        const lit = literal(pattern, noext);
+        const rangeMark = this.#rangeMark;
+        const lit = rangeMark && pattern.includes(rangeMark) ?
+            undefined
+            : literal(pattern, noext);
         // in nocase mode, a literal with cased chars still needs a
         // Matcher, unless nocaseMagicOnly is set.
         if (lit !== undefined &&
@@ -40227,7 +40358,13 @@ class Minimatch {
             return PENDING;
         let m = this.#matchers.get(pattern);
         if (!m) {
-            m = new Matcher(pattern, { nocase, noext, dot, normalize });
+            m = new Matcher(pattern, {
+                nocase,
+                noext,
+                dot,
+                normalize,
+                ...(rangeMark && { rangeMark }),
+            });
             this.#matchers.set(pattern, m);
         }
         return m;
