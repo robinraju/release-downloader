@@ -39160,6 +39160,34 @@ minimatch.braceExpand = braceExpand;
 const RANGE_MIN = 100;
 // a {lo..hi} range that is not escaped, and not a ${...} variable
 const rangeRe = /(?<![\\$])\{(-?\d+)\.\.(-?\d+)\}/g;
+// true if a range mark in this portion is inside a `!(...)`,
+// `*(...)` or `+(...)` extglob. Those repeat or negate their
+// contents, so one Matcher for the whole range does not match the
+// same strings as the union of one pattern per value. For example,
+// `*({1..100})` would match `510` as `5` then `10`, and `!({1..100})`
+// would not match `5`, but every expanded pattern except `!(5)` does.
+// `@(...)` and `?(...)` are fine: they pick one value at most.
+const inRepeatOrNegExt = (portion, mark) => {
+    const stack = [];
+    for (let i = 0; i < portion.length; i++) {
+        const c = portion.charAt(i);
+        if (c === '\\') {
+            i++;
+        }
+        else if (c === mark) {
+            if (stack.some(t => t !== '@' && t !== '?'))
+                return true;
+        }
+        else if (portion.charAt(i + 1) === '(' && '!?+*@'.includes(c)) {
+            stack.push(c);
+            i++;
+        }
+        else if (c === ')') {
+            stack.pop();
+        }
+    }
+    return false;
+};
 const match = (list, pattern, options = {}) => {
     const mm = new Minimatch(pattern, options);
     list = list.filter(f => mm.match(f));
@@ -40592,6 +40620,9 @@ class Minimatch {
             for (const portion of p.split('/')) {
                 const c = portion.indexOf('[');
                 if (c !== -1 && c < portion.lastIndexOf(mark)) {
+                    return this.braceExpand();
+                }
+                if (!this.options.noext && inRepeatOrNegExt(portion, mark)) {
                     return this.braceExpand();
                 }
             }
